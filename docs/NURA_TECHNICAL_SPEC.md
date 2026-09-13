@@ -1,125 +1,120 @@
 # Nura Technical Specification
 
-**Status:** Canonical Technical Specification
-**Version:** 1.0 MVP
-**Product:** Nura
+**Status:** Canonical Technical Specification — Discovery Core Ready  
+**Version:** 2.0  
+**Product:** Nura — one platform
 
 ## 1. Purpose
 
-This document translates the canonical Nura concept, architecture, and MVP product requirements into an implementation-oriented technical contract.
+This document translates the canonical Nura architecture into an implementation contract.
 
-Nura is **one platform** with two business dimensions:
+Nura is **one platform** with two solution dimensions:
 
-- **Digital** — digital solutions, websites, software, automation, integrations, dashboards, APIs, and digital operations.
-- **Vertical** — validated solutions for real-world business verticals such as Barber, Cafe, and future verticals.
+- **Digital** — digital interventions such as websites, software, automation, integrations, dashboards, APIs, and digital operations.
+- **Vertical** — contextual execution for needs emerging from real business domains.
 
-Digital and Vertical are not separate products. They use the same platform, data model, execution lifecycle, evidence model, verification model, and tenant boundaries.
+Digital and Vertical are not separate products. **Discovery Core is an internal core capability, not a separate application.** There is no Vertical System, NuraHub product, or Nuralabs dependency in Nura.
 
-Nura follows:
+Governing principle:
 
-> Demand first → Product second → Execution always.
+> **Demand First → Context First → Solution Second → Execution Always**
 
-Core runtime flow:
+Canonical runtime flow:
 
 ```text
 Demand Signal
-  ↓
+    ↓
 Opportunity
-  ↓
+    ↓
+Business Context
+    ↓
+Domain Discovery
+    ↓
+Workflow Discovery
+    ↓
+Problem Identification
+    ↓
 Evidence + Scoring
-  ↓
+    ↓
 Validation
-  ↓
-Solution Selection
-  ↓
+    ↓
+Solution Decision
+    ├── Digital
+    ├── Vertical
+    ├── Existing Tool
+    ├── Service
+    ├── Automation
+    ├── Integration
+    └── No Action
+    ↓
 Execution
-  ↓
+    ↓
 Verification
-  ↓
-Delivery
-  ↓
+    ↓
 Business Outcome
-  ↓
+    ↓
 Learning
 ```
 
-Nuralabs is **not a dependency, subsystem, runtime, or architectural layer of Nura**.
-
----
+`solution = null` is a valid state while discovery or validation is incomplete.
 
 ## 2. Technical Goals
 
-The MVP must technically prove that Nura can:
+MVP must prove that Nura can:
 
-1. Capture a real demand signal.
-2. Preserve source/evidence provenance.
-3. Normalize a signal into an opportunity.
-4. Score the opportunity using explainable criteria.
-5. Record validation activity and evidence.
-6. Select an appropriate solution type.
-7. Create and track execution work.
-8. Record execution events.
-9. Verify delivered work or outcome evidence.
-10. Record a business outcome without fabricating evidence.
-11. Preserve the resulting learning.
-12. Maintain tenant/workspace ownership and auditability.
+1. Capture an unknown demand signal.
+2. Normalize it into an opportunity without assuming a domain or solution.
+3. Capture business context.
+4. Discover a domain candidate from evidence.
+5. Map workflows and identify problem patterns.
+6. Preserve evidence provenance.
+7. Produce explainable scoring.
+8. Run explicit validation.
+9. Keep solution unset until the validation gate is satisfied.
+10. Route a validated opportunity to an appropriate solution.
+11. Execute permitted work.
+12. Verify execution and outcome evidence.
+13. Preserve auditability, tenant isolation, and learning.
 
-The MVP should be small enough to implement quickly but complete enough to prove the entire loop.
+## 3. Non-Goals
 
----
+MVP does not require:
 
-## 3. Technical Non-Goals
-
-The MVP does not require:
-
-- autonomous unrestricted agents;
-- automatic purchasing or financial transactions;
-- automatic posting to every social platform;
-- a marketplace architecture;
-- separate Digital or Vertical applications;
-- a separate NuraHub product;
+- a separate Digital or Vertical application;
+- a fixed industry catalogue;
+- a Vertical marketplace;
+- NuraHub as a product;
 - Nuralabs integration;
-- guaranteed business outcomes without evidence;
-- a giant workflow engine;
-- custom model training;
-- complex event streaming infrastructure;
-- microservices;
-- Kubernetes;
-- premature multi-region infrastructure.
-
-When a connector or existing tool is sufficient, Nura should use it rather than rebuilding the capability.
-
----
+- unrestricted autonomous agents;
+- microservices or Kubernetes;
+- giant workflow infrastructure;
+- guaranteed outcomes without evidence;
+- automatic product creation from every discovered domain.
 
 ## 4. Platform Architecture
-
-Nura is implemented as one modular application.
 
 ```text
 ┌─────────────────────────────────────────────────────────────┐
 │                         NURA PLATFORM                       │
 ├─────────────────────────────────────────────────────────────┤
-│ Experience Layer                                             │
-│ Dashboard · Opportunities · Validation · Execution · Outcomes│
+│ Experience                                                   │
+│ Onboarding · Discovery · Opportunities · Validation · Work  │
 ├─────────────────────────────────────────────────────────────┤
-│ Application Layer                                            │
-│ Demand · Opportunity · Scoring · Solution · Execution        │
-│ Verification · Delivery · Learning                           │
+│ Discovery Core                                               │
+│ Demand · Context · Domain · Workflow · Problem · Evidence  │
+│ Scoring · Validation · Solution Handoff                     │
 ├─────────────────────────────────────────────────────────────┤
-│ Domain Layer                                                 │
-│ Tenant · Evidence · Lifecycle · Rules · Policies · Audit     │
+│ Execution                                                    │
+│ Solution Registry · Tasks · Connectors · Verification      │
+│ Outcomes · Learning                                          │
 ├─────────────────────────────────────────────────────────────┤
-│ Integration Layer                                            │
-│ Connectors · Adapters · Webhooks · External Services         │
-├─────────────────────────────────────────────────────────────┤
-│ Infrastructure Layer                                         │
-│ Database · Object Storage · Secrets · Auth · Logs             │
+│ Platform Foundation                                          │
+│ Identity · Tenant/Workspace · Audit · Observability        │
+│ Database · Object Storage · Secrets                           │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-The Digital/Vertical distinction is represented as a domain attribute and solution dimension, not as separate application stacks.
-
----
+One modular application is the default. Internal modules may evolve independently without becoming separate products.
 
 ## 5. Runtime Model
 
@@ -127,303 +122,257 @@ Recommended MVP runtime:
 
 - TypeScript;
 - Hono or equivalent lightweight HTTP framework;
-- Cloudflare Pages/Workers-compatible runtime;
-- Cloudflare D1 or equivalent relational database;
-- object storage for larger artifacts when required;
-- external model providers through a provider abstraction;
-- connector adapters for external data/action systems.
+- Cloudflare Workers/Pages-compatible runtime;
+- D1 or equivalent relational database;
+- object storage for larger artifacts;
+- model-provider abstraction;
+- connector/adaptor boundary for external systems.
 
-The architecture must remain portable enough that infrastructure choices do not become product identity.
-
-### Runtime principle
+Request path:
 
 ```text
 HTTP Request
-   ↓
-Authentication / Tenant Resolution
-   ↓
+  ↓
+Auth / Tenant Resolution
+  ↓
 Application Service
-   ↓
-Domain Rules
-   ↓
-Repository / Connector
-   ↓
+  ↓
+Domain Rules / State Transition
+  ↓
+Repository or Connector
+  ↓
 Audit Event
-   ↓
+  ↓
 Response
 ```
 
-Long-running or external execution should use a job/task abstraction rather than blocking a normal HTTP request.
+Long-running external work uses a task/job abstraction rather than blocking normal HTTP requests.
 
----
-
-## 6. Core Modules
-
-All modules are internal modules of Nura.
+## 6. Discovery Core Modules
 
 ### 6.1 Demand Intelligence
 
-Responsibilities:
+Ingest, normalize, classify, deduplicate/link, and preserve provenance for demand signals.
 
-- ingest demand signals;
-- normalize source metadata;
-- classify signal type;
-- preserve provenance;
-- detect duplicates or related signals;
-- create candidate opportunities.
+### 6.2 Opportunity Formation
 
-### 6.2 Opportunity Management
+Convert signals into opportunities while preserving uncertainty and source lineage.
 
-Responsibilities:
+### 6.3 Business Context Discovery
 
-- maintain opportunity records;
-- lifecycle transitions;
-- attach evidence;
-- maintain scores;
-- maintain validation history;
-- link selected solutions and execution.
+Capture actors, business setting, goals, constraints, systems, and relevant operating context.
 
-### 6.3 Scoring & Validation
+### 6.4 Domain Discovery
 
-Responsibilities:
+Create `DomainCandidate` records from observed evidence. Domains are emergent, not selected from a fixed catalogue.
 
-- calculate explainable scores;
-- expose score components;
-- define validation requirements;
-- record validation activity;
-- distinguish observed, inferred, validated, paid/adopted, and outcome-verified evidence.
+### 6.5 Workflow Discovery
 
-### 6.4 Solution Registry
+Map the real workflow around the problem before selecting a solution.
 
-Responsibilities:
+Minimum workflow concepts:
 
-- describe available solution types;
-- classify Digital/Vertical dimension;
-- record implementation method;
-- support service, productized service, automation, software, integration, existing tool, custom work, or no-action decisions.
+- actors;
+- trigger;
+- inputs;
+- actions;
+- decisions;
+- handoffs;
+- tools/systems;
+- outputs;
+- bottlenecks;
+- frequency;
+- constraints.
 
-### 6.5 Execution
+### 6.6 Problem Discovery
 
-Responsibilities:
+Represent problem patterns separately from raw requests. Distinguish symptom, operational friction, repeated problem, root-cause hypothesis, and validated problem.
 
-- create execution work items;
-- assign owner;
-- maintain status;
-- record execution events;
-- attach artifacts;
-- call permitted connectors.
+### 6.7 Evidence & Scoring
 
-### 6.6 Verification & Delivery
+Every important claim is traceable to evidence. Scores are deterministic/explainable for MVP and are decision support, not proof.
 
-Responsibilities:
+### 6.8 Validation
 
-- verify execution output;
-- capture verification evidence;
-- mark delivery state;
-- record outcome evidence;
-- explicitly support `UNVERIFIED` states.
+Validation is a first-class gate. No opportunity becomes validated without a recorded validation basis.
 
-### 6.7 Learning
+### 6.9 Solution Handoff
 
-Responsibilities:
+Only after sufficient validation does Nura select or recommend the smallest appropriate intervention.
 
-- record what happened;
-- record failed assumptions;
-- capture repeatable patterns;
-- inform future scoring and productization decisions.
+## 7. Canonical Entities
 
----
-
-## 7. Opportunity Lifecycle
-
-Canonical state machine:
+Discovery objects:
 
 ```text
-CAPTURED
-   ↓
-NORMALIZED
-   ↓
-SCORING
-   ↓
-VALIDATING
-   ├──→ REJECTED
-   └──→ PARKED
-          
-VALIDATING → VALIDATED
-                  ↓
-           SOLUTION_SELECTED
-                  ↓
-              EXECUTING
-                  ↓
-              VERIFYING
-                  ↓
-               DELIVERED
-                  ↓
-           OUTCOME_RECORDED
-                  ↓
-               LEARNED
+Tenant
+Workspace
+User
+DemandSignal
+Opportunity
+BusinessContext
+DomainCandidate
+Workflow
+ProblemPattern
+Evidence
+Score
+Validation
 ```
 
-### Transition rules
+Downstream objects:
 
-- `CAPTURED → NORMALIZED` requires minimum signal fields.
-- `NORMALIZED → SCORING` requires a valid opportunity identity.
-- `SCORING → VALIDATING` requires a completed score.
-- `VALIDATING → VALIDATED` requires defined validation evidence.
-- `VALIDATING → REJECTED` requires an explicit rejection reason.
-- `VALIDATING → PARKED` requires a park reason.
-- `VALIDATED → SOLUTION_SELECTED` requires a solution decision.
-- `SOLUTION_SELECTED → EXECUTING` requires an execution plan or work item.
-- `EXECUTING → VERIFYING` requires execution completion evidence.
-- `VERIFYING → DELIVERED` requires delivery verification.
-- `DELIVERED → OUTCOME_RECORDED` requires an outcome record, including `UNVERIFIED` when appropriate.
-- `OUTCOME_RECORDED → LEARNED` requires a learning record or explicit `NO_LEARNING` decision.
+```text
+Solution
+Execution
+ExecutionEvent
+Artifact
+Verification
+Outcome
+LearningRecord
+Connector
+AuditEvent
+```
 
-No transition may silently skip required evidence.
+### DomainCandidate contract
 
----
+A domain candidate must not require a solution.
 
-## 8. Evidence and Provenance
+```json
+{
+  "domain": "Snack Distribution",
+  "status": "observed",
+  "evidence_count": 12,
+  "workflows": ["reseller_ordering", "stock_replenishment", "delivery"],
+  "repeated_problems": ["manual_order_capture", "stock_visibility"],
+  "validation_status": "in_progress",
+  "solution": null
+}
+```
 
-Every important claim should be traceable to evidence.
+This is an example only; it does not create a predefined industry enum.
+
+### Ownership
+
+All tenant-owned records carry:
+
+- `tenant_id`;
+- `workspace_id` where applicable;
+- opaque stable ID;
+- UTC timestamps;
+- actor/creator where relevant.
+
+Cross-tenant access is denied by default.
+
+## 8. Discovery State Machine
+
+```text
+SIGNAL_CAPTURED
+      ↓
+OPPORTUNITY_FORMED
+      ↓
+CONTEXT_DISCOVERED
+      ↓
+DOMAIN_CANDIDATE
+      ↓
+WORKFLOW_MAPPED
+      ↓
+PROBLEM_IDENTIFIED
+      ↓
+EVIDENCE / SCORING
+      ↓
+VALIDATING
+   ┌──┴─────────┐
+REJECTED     PARKED
+      │
+      └──────────────→ VALIDATED
+                         ↓
+                  SOLUTION_SELECTED
+                         ↓
+                     EXECUTING
+                         ↓
+                     VERIFYING
+                         ↓
+                      OUTCOME
+                         ↓
+                      LEARNING
+```
+
+Not every signal must reach every stage. Incomplete or terminated paths require explicit reasons.
+
+## 9. Evidence and Provenance
 
 Evidence levels:
 
 ```text
-OBSERVED
-  ↓
-INFERRED
-  ↓
-VALIDATED
-  ↓
-PAID / ADOPTED
-  ↓
-OUTCOME VERIFIED
+OBSERVED → INFERRED → VALIDATED → PAID/ADOPTED → OUTCOME VERIFIED
 ```
 
-These are evidence states, not automatic upgrades. A signal does not become validated merely because an AI model predicts it is likely.
+These are states, not automatic upgrades.
 
-### Evidence fields
+Minimum evidence fields:
 
-Minimum fields:
+- `id`;
+- `tenant_id`;
+- `workspace_id`;
+- `type`;
+- `source_type`;
+- `source_ref`;
+- `captured_at`;
+- `content_hash` where applicable;
+- `confidence`;
+- `evidence_level`;
+- `metadata`;
+- `created_by`.
 
-- `id`
-- `tenant_id`
-- `workspace_id`
-- `type`
-- `source_type`
-- `source_ref`
-- `captured_at`
-- `content_hash` where applicable
-- `confidence`
-- `evidence_level`
-- `metadata`
-- `created_by`
+External source references must be preserved where lawful and technically possible.
 
-External content should preserve the original source reference where lawful and technically possible.
+## 10. Scoring
 
----
+Suggested explainable dimensions:
 
-## 9. Demand Signal Ingestion
-
-A connector or manual input produces a normalized signal.
-
-```text
-External Source / Manual Input
-          ↓
-       Connector
-          ↓
- Raw Payload + Provenance
-          ↓
- Normalization Adapter
-          ↓
- DemandSignal
-          ↓
- Deduplication / Linking
-          ↓
- Opportunity Candidate
-```
-
-The ingestion layer must not assume that every signal represents genuine demand.
-
-Examples of source types:
-
-- social request;
-- marketplace request;
-- direct business conversation;
-- customer request;
-- business operation event;
-- public request;
-- internal observation;
-- imported research data.
-
-Connectors must comply with applicable platform terms, permissions, and laws.
-
----
-
-## 10. Scoring Engine
-
-The scoring engine must be deterministic and explainable for MVP purposes.
-
-Suggested dimensions:
-
-| Dimension | Purpose |
+| Dimension | Meaning |
 |---|---|
-| Problem Severity | How painful is the problem? |
-| Frequency | How often does it occur? |
-| Evidence Strength | How strong is the evidence? |
-| Willingness to Pay | Is payment/adoption signal present? |
-| Reachability | Can the potential customer be reached? |
-| Solution Feasibility | Can Nura realistically solve it? |
-| Outcome Measurability | Can the result be verified? |
-| Repeatability | Is the problem likely to recur? |
+| Problem Severity | Pain/materiality |
+| Frequency | Recurrence |
+| Evidence Strength | Credibility/quality |
+| Willingness to Act/Pay | Adoption signal |
+| Reachability | Ability to reach affected party |
+| Feasibility | Ability to execute |
+| Outcome Measurability | Ability to verify result |
+| Repeatability | Potential for repeat demand |
 
-The implementation should store both:
+Persist both component values and rationale. A high score means **worth investigating**, not guaranteed demand.
 
-- final score;
-- component scores and reasons.
+## 11. Validation Gate
 
-A score is decision support, not proof of demand.
-
----
-
-## 11. Validation Engine
-
-Validation is a first-class workflow.
-
-A validation record should contain:
+A validation record contains:
 
 - hypothesis;
 - target customer/context;
-- validation method;
+- method;
 - expected evidence;
 - actual evidence;
 - result;
 - confidence;
 - next action;
-- timestamp;
-- operator/actor.
+- actor;
+- timestamp.
 
-Example validation methods:
+Validation should establish, where applicable:
 
-- direct interview;
-- response to offer;
-- landing-page test;
-- paid pilot;
-- existing business data;
-- customer request repetition;
-- manual observation;
-- marketplace demand evidence.
+1. Is the problem real?
+2. Is it repeated/material?
+3. Is evidence credible?
+4. Is the affected party identifiable?
+5. Is a meaningful outcome possible?
+6. Is there willingness/ability to act?
+7. Is a pilot worth testing?
 
-The system must not label an opportunity `VALIDATED` without a recorded validation basis.
-
----
+`VALIDATED` requires recorded evidence and rationale.
 
 ## 12. Solution Registry
 
-A solution is selected after validation, not before.
-
-Minimum solution types:
+Allowed solution types include:
 
 ```text
 SERVICE
@@ -437,52 +386,37 @@ CUSTOM_BUILD
 NO_ACTION
 ```
 
-Each solution has:
+A solution has at minimum:
 
-- `id`
-- `tenant_id`
-- `name`
-- `dimension` = `DIGITAL | VERTICAL`
-- `type`
-- `description`
-- `capabilities`
-- `implementation_method`
-- `estimated_effort`
-- `verification_method`
-- `status`
+- `id`;
+- `tenant_id`;
+- `name`;
+- `dimension = DIGITAL | VERTICAL`;
+- `type`;
+- `description`;
+- `capabilities`;
+- `implementation_method`;
+- `verification_method`;
+- `status`.
 
-The registry can later support productization, but MVP should not assume every solution becomes a product.
+Solution selection must not be treated as validation itself.
 
----
+## 13. Execution
 
-## 13. Execution Abstraction
-
-Nura needs an execution abstraction without coupling itself to one execution engine.
+Execution is an abstraction over internal actions, connectors, external automation, human tasks, and existing tools.
 
 ```text
 Execution Service
       ↓
 Execution Adapter
-      ├── Internal action
-      ├── Connector action
-      ├── External automation
-      ├── Human task
-      └── Existing tool
+ ├── Internal action
+ ├── Connector action
+ ├── External automation
+ ├── Human task
+ └── Existing tool
 ```
 
-Every execution must have:
-
-- intent;
-- owner/actor;
-- input reference;
-- action type;
-- status;
-- timestamps;
-- output reference;
-- error state;
-- audit events.
-
-Execution status:
+Statuses:
 
 ```text
 PENDING → RUNNING → SUCCEEDED
@@ -490,34 +424,30 @@ PENDING → RUNNING → SUCCEEDED
                  └→ CANCELLED
 ```
 
-No execution should be represented as successful solely because a request was accepted.
+Execution success means the execution completed; it does **not** prove a business outcome.
 
----
-
-## 14. Verification and Outcome Model
-
-Verification is separate from execution.
+## 14. Verification and Outcome
 
 ```text
-Execution Success
-      ↓
+Execution
+  ↓
 Verification Check
-      ↓
-Evidence
-      ↓
-Delivery Status
-      ↓
-Outcome Status
+  ↓
+Verification Evidence
+  ↓
+Delivery
+  ↓
+Outcome
 ```
 
-Minimum verification statuses:
+Verification statuses:
 
 - `PENDING`
 - `VERIFIED`
 - `FAILED`
 - `UNVERIFIED`
 
-Minimum outcome statuses:
+Outcome statuses:
 
 - `PENDING`
 - `PARTIAL`
@@ -525,166 +455,57 @@ Minimum outcome statuses:
 - `NOT_ACHIEVED`
 - `UNVERIFIED`
 
-Nura must never infer `ACHIEVED` from `EXECUTION = SUCCEEDED` alone.
+`ACHIEVED` must never be inferred solely from execution success.
 
----
+## 15. API Boundary
 
-## 15. Tenant and Workspace Isolation
-
-Every business-owned record must be scoped by:
-
-- `tenant_id`;
-- optionally `workspace_id`.
-
-Authorization must be evaluated before returning or mutating tenant-owned data.
-
-Recommended ownership hierarchy:
-
-```text
-Tenant
-  └── Workspace
-       ├── Users / Operators
-       ├── Demand Signals
-       ├── Opportunities
-       ├── Evidence
-       ├── Solutions
-       ├── Executions
-       ├── Artifacts
-       ├── Outcomes
-       └── Audit Events
-```
-
-Cross-tenant queries are prohibited by default.
-
----
-
-## 16. Authentication and Authorization
-
-MVP requires authenticated access for protected tenant operations.
-
-The authorization model should distinguish at minimum:
-
-- `OWNER`
-- `ADMIN`
-- `OPERATOR`
-- `VIEWER`
-
-Permissions should be capability-oriented rather than hardcoded into UI routes.
-
-Sensitive operations should require explicit authorization checks at the server/application layer.
-
----
-
-## 17. Core Data Model
-
-Minimum entities:
-
-```text
-Tenant
-Workspace
-User
-DemandSignal
-Evidence
-Opportunity
-Score
-Validation
-Solution
-Execution
-ExecutionEvent
-Verification
-Outcome
-Artifact
-LearningRecord
-Connector
-AuditEvent
-```
-
-### Key relationships
-
-```text
-Tenant 1──N Workspace
-Workspace 1──N DemandSignal
-DemandSignal N──N Evidence
-DemandSignal N──1 Opportunity
-Opportunity 1──N Score
-Opportunity 1──N Validation
-Opportunity 1──1 Solution
-Opportunity 1──N Execution
-Execution 1──N ExecutionEvent
-Execution 1──N Artifact
-Execution 1──1 Verification
-Opportunity 1──N Outcome
-Opportunity 1──N LearningRecord
-All important mutations 1──N AuditEvent
-```
-
-IDs should be opaque, unique, and stable. Prefer UUID/ULID-style identifiers.
-
-Timestamps should be stored in UTC.
-
----
-
-## 18. API Boundary
-
-The MVP API can remain a modular monolith.
-
-Suggested endpoint groups:
+The MVP remains a modular monolith.
 
 ```text
 /auth/*
 /tenants/*
 /workspaces/*
 /signals/*
-/evidence/*
 /opportunities/*
+/contexts/*
+/domains/*
+/workflows/*
+/problems/*
+/evidence/*
 /scores/*
 /validations/*
 /solutions/*
 /executions/*
 /verifications/*
 /outcomes/*
-/artifacts/*
 /learnings/*
 /connectors/*
 /audit/*
 ```
 
-Example opportunity operations:
+Core operations include:
 
 ```text
-POST   /opportunities
-GET    /opportunities
-GET    /opportunities/:id
-PATCH  /opportunities/:id
-POST   /opportunities/:id/score
-POST   /opportunities/:id/validate
-POST   /opportunities/:id/select-solution
-POST   /opportunities/:id/execute
-POST   /opportunities/:id/verify
-POST   /opportunities/:id/outcome
+POST /signals
+POST /opportunities
+POST /opportunities/:id/context
+POST /opportunities/:id/domain
+POST /opportunities/:id/workflows
+POST /opportunities/:id/problems
+POST /opportunities/:id/evidence
+POST /opportunities/:id/score
+POST /opportunities/:id/validate
+POST /opportunities/:id/select-solution
+POST /opportunities/:id/execute
+POST /opportunities/:id/verify
+POST /opportunities/:id/outcome
 ```
 
-API handlers should remain thin. Domain/application services own business rules.
+Handlers remain thin; domain/application services own state transitions and business rules.
 
----
+## 16. Connector Contract
 
-## 19. Connector Architecture
-
-Connectors are adapters, not product identities.
-
-```text
-Nura Core
-   ↓
-Connector Contract
-   ↓
-Provider Adapter
-   ↓
-External API / Automation / Source
-```
-
-A connector should expose normalized operations rather than leaking provider-specific payloads into core domain logic.
-
-Minimum connector contract:
+Connectors are adapters, never product identities.
 
 ```ts
 interface Connector {
@@ -697,26 +518,21 @@ interface Connector {
 }
 ```
 
-Provider-specific data belongs inside the adapter.
+Provider-specific payloads stay inside adapters. Credentials are owned and scoped explicitly. External acquisition must comply with provider permissions, terms, and applicable law.
 
-Connectors must support explicit ownership and credential boundaries.
+## 17. Idempotency and Reliability
 
----
+Mutating/external operations require, where applicable:
 
-## 20. Idempotency, Retries, and Errors
-
-External actions must support idempotency where technically possible.
-
-Minimum requirements:
-
-- request id / correlation id;
-- idempotency key for repeatable mutations;
+- request/correlation ID;
+- idempotency key;
 - bounded retries;
 - retry classification;
-- normalized error model;
-- audit trail for retry attempts.
+- normalized errors;
+- audit events;
+- concurrency/conflict handling.
 
-Suggested error categories:
+Error classes:
 
 ```text
 VALIDATION_ERROR
@@ -731,331 +547,71 @@ INTERNAL_ERROR
 UNSUPPORTED
 ```
 
-Retries must never turn a non-idempotent action into accidental duplicate execution.
-
----
-
-## 21. Audit Model
-
-Important mutations should produce immutable audit events.
-
-Minimum audit fields:
-
-- `id`
-- `tenant_id`
-- `workspace_id`
-- `actor_id`
-- `action`
-- `entity_type`
-- `entity_id`
-- `before`
-- `after`
-- `correlation_id`
-- `created_at`
-
-Audit logs should avoid storing raw secrets or unnecessary sensitive payloads.
-
----
-
-## 22. Secrets and Credential Ownership
-
-Credentials must never be stored in normal application records or source code.
-
-Examples:
-
-- OAuth tokens;
-- API keys;
-- webhook secrets;
-- provider credentials.
-
-Secrets should be stored using the deployment platform's secret mechanism or an appropriate secret manager.
-
-Nura must distinguish:
-
-- Nura-owned credentials;
-- tenant-owned credentials;
-- operator-provided temporary credentials;
-- connector authorization state.
-
-The system must make ownership visible in configuration metadata.
-
----
-
-## 23. Observability
-
-MVP observability requires:
-
-- structured logs;
-- request/correlation IDs;
-- execution IDs;
-- connector/provider identifiers;
-- error classification;
-- execution duration;
-- validation and verification status;
-- audit events.
-
-Minimum operational questions must be answerable:
-
-1. What happened?
-2. For which tenant/workspace?
-3. Who triggered it?
-4. Which opportunity was involved?
-5. Which connector/provider was used?
-6. Did execution succeed?
-7. Was the result verified?
-8. What evidence supports the outcome?
-
----
-
-## 24. Security Requirements
-
-MVP security baseline:
-
-- server-side authorization;
-- tenant isolation;
-- secure session handling;
-- CSRF protection where applicable;
-- input validation;
-- output encoding;
-- secret redaction;
-- rate limiting for exposed mutation endpoints;
-- safe webhook verification;
-- audit logging;
-- least-privilege connector access;
-- no credentials in logs;
-- no trust in client-supplied tenant IDs without authorization checks.
-
----
-
-## 25. UI-to-API Boundary
-
-The UI must not contain business-critical authorization or lifecycle logic.
-
-UI responsibilities:
-
-- display state;
-- collect user input;
-- present evidence;
-- show scoring explanations;
-- trigger permitted actions;
-- show execution/verification status.
-
-Server responsibilities:
-
-- authorization;
-- validation;
-- state transitions;
-- scoring calculation;
-- connector execution;
-- evidence persistence;
-- audit;
-- outcome classification.
-
----
-
-## 26. Recommended MVP Screens
-
-Minimum application surfaces:
-
-1. Dashboard.
-2. Demand Signals.
-3. Opportunity List.
-4. Opportunity Detail.
-5. Validation Workspace.
-6. Solution Selection.
-7. Execution Detail.
-8. Verification / Delivery.
-9. Outcomes.
-10. Learning.
-11. Connector Settings.
-12. Audit View.
-
-Digital and Vertical should use the same screens. Filtering or context may identify the selected dimension.
-
----
-
-## 27. Productization Gate in Technical Terms
-
-Nura may recommend productization only when sufficient evidence exists.
-
-```text
-Signal
- ↓
-Repeated Problem
- ↓
-Evidence
- ↓
-Validation
- ↓
-Pilot
- ↓
-Repeatable Outcome
- ↓
-Productization Candidate
-```
-
-A productization candidate should store:
-
-- problem pattern;
-- target segment;
-- evidence count/strength;
-- validation history;
-- successful solution pattern;
-- execution effort;
-- outcome evidence;
-- repeatability assessment.
-
-The system should allow `NO_PRODUCTIZATION` explicitly.
-
----
-
-## 28. Technical Acceptance Criteria
-
-The MVP is technically acceptable when one real workflow can complete:
-
-```text
-Create Demand Signal
-      ↓
-Attach Evidence
-      ↓
-Create Opportunity
-      ↓
-Calculate Explainable Score
-      ↓
-Record Validation
-      ↓
-Select Digital or Vertical Solution
-      ↓
-Create Execution
-      ↓
-Record Execution Events
-      ↓
-Attach Output Artifact
-      ↓
-Verify Result
-      ↓
-Record Outcome
-      ↓
-Create Learning Record
-      ↓
-Show Complete Audit Trail
-```
-
-Additional acceptance criteria:
-
-- unauthorized tenant access is rejected;
-- lifecycle transitions are enforced server-side;
-- failed execution cannot appear as verified delivery;
-- unverified outcomes remain explicitly unverified;
-- connector failures are normalized and auditable;
-- repeated requests can be safely handled where idempotency is supported;
-- no Nuralabs dependency exists;
-- Digital and Vertical share the same core platform;
-- no separate NuraHub product is required.
-
----
-
-## 29. Implementation Order
-
-Recommended implementation sequence:
-
-### Phase 1 — Foundation
-
-- project scaffold;
-- environment configuration;
-- database;
-- tenant/workspace model;
-- authentication;
-- authorization;
-- audit foundation.
-
-### Phase 2 — Demand & Opportunity
-
-- demand signal ingestion;
-- evidence;
-- opportunity CRUD;
-- lifecycle state machine;
-- scoring.
-
-### Phase 3 — Validation & Solution
-
-- validation records;
-- solution registry;
-- solution selection;
-- productization metadata.
-
-### Phase 4 — Execution
-
-- execution records;
-- execution events;
-- connector abstraction;
-- bounded retry/error handling;
-- artifacts.
-
-### Phase 5 — Verification & Outcome
-
-- verification;
-- delivery state;
-- outcome records;
-- learning records.
-
-### Phase 6 — UX and Hardening
-
-- dashboard;
-- opportunity workspace;
-- execution visibility;
-- audit view;
-- observability;
-- security hardening;
-- end-to-end testing.
-
-Do not start with broad connector coverage. Prove one complete workflow first.
-
----
-
-## 30. Implementation Rules
-
-1. One Nura platform.
-2. Digital and Vertical are dimensions, not separate products.
-3. Demand evidence precedes productization.
-4. Execution is always explicit.
-5. Verification is separate from execution.
-6. Outcomes require evidence.
-7. AI predictions are not automatically treated as facts.
-8. External systems are accessed through connectors.
-9. Provider-specific logic stays inside adapters.
-10. Tenant ownership is enforced server-side.
-11. Auditability is built in from the beginning.
-12. Secrets never enter source code or normal data records.
-13. Do not build infrastructure merely for architectural appearance.
-14. Do not create a dependency on Nuralabs.
-15. Do not create a separate NuraHub product.
-16. Prefer the smallest implementation that proves the complete demand-to-outcome loop.
-
----
-
-## 31. Final Technical Principle
-
-Nura's technical moat is not a collection of AI features.
-
-It is the ability to preserve a trustworthy chain from:
-
-```text
-REAL DEMAND
-   ↓
-EVIDENCE
-   ↓
-DECISION
-   ↓
-SOLUTION
-   ↓
-EXECUTION
-   ↓
-VERIFICATION
-   ↓
-BUSINESS OUTCOME
-   ↓
-LEARNING
-```
-
-The implementation must therefore optimize for **traceability, evidence, repeatability, tenant ownership, and verified outcomes** before optimizing for autonomous complexity.
+## 18. AI Boundary
+
+AI may assist with normalization, classification, extraction, clustering, summarization, hypothesis generation, scoring suggestions, and workflow/problem analysis.
+
+AI must not silently:
+
+- invent evidence;
+- upgrade evidence level;
+- declare validation without basis;
+- fabricate execution;
+- fabricate delivery;
+- declare business outcomes without verification;
+- bypass tenant/permission rules.
+
+AI-generated claims require provenance and appropriate human review.
+
+## 19. Security and Audit
+
+Required MVP controls:
+
+- tenant/workspace isolation;
+- server-side secrets;
+- authenticated protected operations;
+- capability-based authorization;
+- least-privilege connectors;
+- evidence provenance;
+- critical mutation audit events;
+- correlation IDs;
+- redacted sensitive logs;
+- explicit artifact ownership.
+
+Security claims must match implemented and tested controls.
+
+## 20. Technical Acceptance Tests
+
+The implementation is not Discovery Core-ready until these pass:
+
+1. **Unknown Domain** — a signal can enter without a predefined industry.
+2. **No Premature Solution** — context/workflow/problem discovery can proceed while `solution = null`.
+3. **Evidence Lineage** — claims link to source evidence.
+4. **Explainable Score** — score components and rationale are persisted.
+5. **Validation Gate** — `VALIDATED` requires recorded validation evidence.
+6. **Tenant Isolation** — tenant A cannot read tenant B records.
+7. **Idempotent Ingestion** — duplicate ingestion does not create uncontrolled duplicates.
+8. **No Fake Outcome** — execution success cannot create `ACHIEVED` automatically.
+9. **AI Boundary** — AI cannot bypass evidence/validation/authorization rules.
+10. **Productization Gate** — repeated validated problems are required before productization.
+
+## 21. Definition of Done
+
+Discovery Core implementation is considered technically ready when:
+
+- the canonical entities exist;
+- state transitions are explicit;
+- discovery can start from unknown demand;
+- domain/workflow/problem discovery is supported;
+- evidence is traceable;
+- scoring is explainable;
+- validation is a real gate;
+- solution remains nullable until appropriate;
+- tenant isolation is enforced;
+- critical mutations are audited;
+- unknown-first and no-premature-solution tests pass;
+- no UI or API claims an unverified business outcome as fact.
+
+**Final invariant:**
+
+> Nura must be able to discover something it did not already know, understand it before deciding what to build, validate it before productizing it, and verify outcomes before claiming success.
