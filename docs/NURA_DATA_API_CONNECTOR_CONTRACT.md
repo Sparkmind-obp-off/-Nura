@@ -1,95 +1,132 @@
 # Nura Data, API & Connector Contract
 
 **Status:** Canonical
-**Version:** 1.0
+**Version:** 2.0
 **Date:** 2026-09-14
 
 ## 1. Purpose
 
-This document defines the canonical data model, API boundaries, lifecycle persistence rules, and connector contract for Nura.
+This document defines the canonical data model, API boundaries, lifecycle persistence rules, connector contract, and integrity rules for Nura.
 
-Nura is one platform with two business dimensions:
+Nura is **one platform** with two solution dimensions:
 
 - **Digital**
 - **Vertical**
 
-This contract exists to make the operating loop implementable and auditable:
+Discovery Core is a capability inside Nura, not a separate product or application.
 
-`Demand Signal → Opportunity → Evidence + Scoring → Validation → Solution → Execution → Verification → Delivery → Outcome → Learning`
+Governing principle:
+
+> **Demand First → Context First → Solution Second → Execution Always**
+
+Canonical operating loop:
+
+`Demand Signal → Opportunity → Business Context → Domain → Workflow → Problem → Evidence → Scoring → Validation → Solution Decision → Execution → Verification → Business Outcome → Learning`
+
+The data contract must preserve this causal order. A weak or incomplete signal must never be silently converted into a validated problem, predetermined vertical, selected solution, or verified outcome.
+
+---
 
 ## 2. Contract Principles
 
-1. Tenant ownership is enforced server-side.
-2. Every business record has an explicit owner/workspace context.
-3. Evidence provenance is first-class data.
-4. State transitions are explicit and validated.
-5. Execution completion never implies outcome verification.
-6. External providers are accessed through connectors/adapters.
-7. Provider-specific schemas do not leak into the Nura domain model.
-8. Mutating operations support idempotency where retry can occur.
-9. API errors are structured and machine-readable.
-10. Audit events are generated for security- and state-significant mutations.
-11. Secrets are referenced, not returned or persisted in plaintext application records.
-12. AI-generated values are marked as inferred/recommended rather than facts.
-13. No API creates a fake validated or verified state without required evidence.
+1. Tenant/workspace ownership is enforced server-side.
+2. Every business record has an explicit ownership context.
+3. Discovery entities are first-class domain records.
+4. Evidence provenance is first-class data.
+5. Domain discovery is dynamic; there is no fixed industry catalogue.
+6. `solution = null` is valid while discovery or validation is incomplete.
+7. State transitions are explicit and server-validated.
+8. Validation is a gate before solution selection.
+9. Execution completion never implies outcome verification.
+10. External providers are accessed through connectors/adapters.
+11. Provider-specific schemas do not leak into the Nura domain model.
+12. Mutating operations support idempotency where retries can occur.
+13. API errors are structured and machine-readable.
+14. Security- and state-significant mutations generate audit events.
+15. Secrets are referenced, never returned or persisted in plaintext domain records.
+16. AI-generated values are marked as inferred/recommended, not facts.
+17. No API may create a fake validated, delivered, or verified state.
+18. Unknown domains and unknown workflows are valid inputs.
+19. New domains must not require schema or architecture changes.
+20. Human-in-the-loop remains available for consequential discovery, validation, solution, and execution decisions.
+
+---
 
 ## 3. Canonical Entity Model
 
-Core entities:
-
 ```text
 Tenant
- └── Workspace
-      ├── User / Operator
-      ├── DemandSignal
-      │    └── Evidence
-      │          └── Opportunity
-      ├── Opportunity
-      │    ├── Score
-      │    ├── Validation
-      │    └── Solution
-      │          └── Execution
-      │                ├── ExecutionEvent
-      │                ├── Artifact
-      │                └── Verification
-      │                      └── Outcome
-      ├── LearningRecord
-      ├── Connector
-      └── AuditEvent
+└── Workspace
+    ├── User / Operator
+    ├── DemandSignal
+    │   └── Evidence
+    ├── Opportunity
+    │   ├── BusinessContext
+    │   │   └── DomainCandidate
+    │   │       └── Workflow
+    │   │           └── ProblemPattern
+    │   ├── Evidence
+    │   ├── Score
+    │   ├── Validation
+    │   └── Solution (nullable until validated)
+    │       └── Execution
+    │           ├── ExecutionEvent
+    │           ├── Artifact
+    │           └── Verification
+    │               └── Outcome
+    ├── LearningRecord
+    ├── Connector
+    └── AuditEvent
 ```
+
+Core discovery entities:
+
+`DemandSignal, Opportunity, BusinessContext, DomainCandidate, Workflow, ProblemPattern, Evidence, Score, Validation`
+
+Downstream entities:
+
+`Solution, Execution, ExecutionEvent, Artifact, Verification, Outcome, LearningRecord, Connector, AuditEvent`
+
+---
 
 ## 4. Tenant and Workspace Model
 
 ### Tenant
 
-Represents the top-level ownership boundary.
+Top-level ownership and security boundary.
 
 Required fields:
 
-- `id`
-- `name`
-- `status`
-- `created_at`
-- `updated_at`
+```text
+id
+name
+status
+created_at
+updated_at
+```
 
 ### Workspace
 
-Represents an operational context inside a tenant.
+Operational context inside a tenant.
 
 Required fields:
 
-- `id`
-- `tenant_id`
-- `name`
-- `status`
-- `created_at`
-- `updated_at`
+```text
+id
+tenant_id
+name
+status
+created_at
+updated_at
+```
 
-Every domain query must scope by authorized tenant/workspace context.
+Every domain/API query must scope records by an authorized tenant/workspace context. Cross-tenant access is always denied by default.
+
+---
 
 ## 5. DemandSignal
 
-Represents an observed inbound demand signal before it becomes an opportunity.
+Represents an observed inbound signal before it becomes an opportunity.
 
 Suggested fields:
 
@@ -107,17 +144,220 @@ created_at
 updated_at
 ```
 
-`raw_content_reference` may point to stored content or an external reference. Sensitive or restricted source data must follow the security contract.
-
-Suggested statuses:
+Statuses:
 
 `CAPTURED | NORMALIZED | LINKED | DISMISSED`
 
-A signal is not automatically validated demand.
+A signal is not automatically a validated problem or opportunity.
 
-## 6. Evidence
+External acquisition sources may include APIs, marketplaces, social/public sources, forms, imports, or manual capture. Source availability must never be assumed to be universal.
 
-Evidence supports an interpretation, score, validation, delivery, or outcome.
+---
+
+## 6. Opportunity
+
+Represents a normalized demand/problem candidate worth evaluating.
+
+Suggested fields:
+
+```text
+id
+workspace_id
+title
+problem_statement
+status
+priority
+source_signal_count
+created_by
+created_at
+updated_at
+```
+
+An opportunity may be created before a domain or solution is known.
+
+Canonical lifecycle:
+
+```text
+CAPTURED
+  ↓
+NORMALIZED
+  ↓
+CONTEXT_DISCOVERY
+  ↓
+WORKFLOW_DISCOVERY
+  ↓
+PROBLEM_DISCOVERY
+  ↓
+SCORING
+  ↓
+VALIDATING
+  ├──→ REJECTED
+  ├──→ PARKED
+  └──→ VALIDATED
+          ↓
+  SOLUTION_SELECTED
+          ↓
+      EXECUTING
+          ↓
+      VERIFYING
+          ↓
+       DELIVERED
+          ↓
+    OUTCOME_RECORDED
+          ↓
+        LEARNED
+```
+
+Clients cannot arbitrarily assign terminal, validated, or verified states.
+
+---
+
+## 7. BusinessContext
+
+Represents the real-world business context discovered around an opportunity.
+
+Suggested fields:
+
+```text
+id
+workspace_id
+opportunity_id
+actors
+business_model_summary
+operating_environment
+constraints_json
+existing_tools_json
+context_notes
+confidence
+status
+created_by
+created_at
+updated_at
+```
+
+Business context may be incomplete during early discovery. AI-generated context must be marked as inferred until supported by evidence.
+
+The context layer exists before solution selection.
+
+---
+
+## 8. DomainCandidate
+
+Represents a domain/business context candidate discovered from evidence rather than selected from a fixed industry list.
+
+Suggested fields:
+
+```text
+id
+workspace_id
+opportunity_id
+business_context_id
+name
+status
+description
+evidence_count
+confidence
+validation_status
+solution_id nullable
+created_at
+updated_at
+```
+
+Example:
+
+```json
+{
+  "name": "Snack Distribution",
+  "status": "OBSERVED",
+  "evidence_count": 12,
+  "validation_status": "IN_PROGRESS",
+  "solution_id": null
+}
+```
+
+Valid domain statuses may include:
+
+`CANDIDATE | OBSERVED | IN_PROGRESS | VALIDATED | REJECTED | ARCHIVED`
+
+A domain may exist with `solution_id = null`. This is expected and important.
+
+There must be no hardcoded enum such as `BARBER | CAFE | ...` in the core domain model.
+
+---
+
+## 9. Workflow
+
+Represents how work is actually performed inside a discovered domain/context.
+
+Suggested fields:
+
+```text
+id
+workspace_id
+business_context_id
+domain_candidate_id
+name
+trigger
+actors
+inputs
+actions
+decisions
+handoffs
+outputs
+tools
+frequency
+bottlenecks
+constraints_json
+confidence
+status
+created_at
+updated_at
+```
+
+Workflow status may include:
+
+`DISCOVERED | MAPPED | CONFIRMED | REJECTED`
+
+Workflow discovery must precede solution selection when workflow understanding is required to determine the appropriate intervention.
+
+---
+
+## 10. ProblemPattern
+
+Represents a discovered operational problem or repeated friction.
+
+Suggested fields:
+
+```text
+id
+workspace_id
+opportunity_id
+business_context_id
+domain_candidate_id
+workflow_id
+type
+statement
+root_cause_hypothesis
+frequency
+impact
+affected_actors
+confidence
+status
+created_at
+updated_at
+```
+
+Problem types may include:
+
+`SYMPTOM | REQUEST | OPERATIONAL_FRICTION | REPEATED_PROBLEM | ROOT_CAUSE_HYPOTHESIS | VALIDATED_PROBLEM`
+
+A request must not automatically be treated as a validated problem.
+
+---
+
+## 11. Evidence
+
+Evidence supports discovery, scoring, validation, execution, delivery, or outcome claims.
 
 Suggested fields:
 
@@ -145,60 +385,15 @@ Evidence levels:
 - `PAID_ADOPTED`
 - `OUTCOME_VERIFIED`
 
-`INFERRED` must never be presented as equivalent to `OBSERVED` or verified evidence.
+`INFERRED` must never be presented as equivalent to observed or verified evidence.
 
-## 7. Opportunity
+Evidence must preserve lineage to its source whenever technically possible.
 
-Represents a normalized business problem worth evaluating.
+---
 
-Suggested fields:
+## 12. Score
 
-```text
-id
-workspace_id
-title
-problem_statement
-customer_context
-status
-priority
-source_signal_count
-created_by
-created_at
-updated_at
-```
-
-Canonical lifecycle:
-
-```text
-CAPTURED
-  ↓
-NORMALIZED
-  ↓
-SCORING
-  ↓
-VALIDATING
-  ├──→ REJECTED
-  ├──→ PARKED
-  └──→ VALIDATED
-          ↓
-  SOLUTION_SELECTED
-          ↓
-      EXECUTING
-          ↓
-      VERIFYING
-          ↓
-       DELIVERED
-          ↓
-    OUTCOME_RECORDED
-          ↓
-        LEARNED
-```
-
-Transitions must be server-validated. Clients cannot arbitrarily assign terminal or verified states.
-
-## 8. Score
-
-Represents an explainable evaluation of an opportunity.
+Represents an explainable evaluation, never ground truth.
 
 Suggested fields:
 
@@ -217,17 +412,22 @@ created_by
 Suggested dimensions:
 
 - demand strength;
-- frequency/repetition;
+- repetition/frequency;
 - pain severity;
 - buyer relevance;
 - reachability;
 - willingness-to-pay evidence;
 - outcome potential;
-- execution feasibility.
+- execution feasibility;
+- evidence quality.
 
-Scores are decision support, not ground truth.
+Every material score must be explainable through dimensions and supporting evidence.
 
-## 9. Validation
+---
+
+## 13. Validation
+
+Represents a deliberate test of whether the identified problem/opportunity is real and worth acting on.
 
 Suggested fields:
 
@@ -250,19 +450,23 @@ Decisions:
 
 `VALIDATED | REJECTED | PARKED | NEEDS_MORE_EVIDENCE`
 
-`VALIDATED` requires supporting evidence according to application policy.
+`VALIDATED` requires supporting evidence according to application policy and must not be created merely because an AI model recommends it.
 
-## 10. Solution
+---
 
-Represents the chosen intervention.
+## 14. Solution
 
-Required classification:
+Represents an intervention selected only after sufficient discovery and validation.
+
+`solution_id` on a DomainCandidate is nullable until this stage.
+
+Primary dimension:
 
 `DIGITAL | VERTICAL`
 
 Additional solution types may include:
 
-`PRODUCTIZED_SERVICE | CUSTOM_SERVICE | AUTOMATION | SOFTWARE | INTEGRATION | EXISTING_TOOL | NO_ACTION`
+`PRODUCTIZED_SERVICE | CUSTOM_SERVICE | AUTOMATION | SOFTWARE | INTEGRATION | EXISTING_TOOL | WORKFLOW_IMPROVEMENT | NO_ACTION`
 
 Suggested fields:
 
@@ -270,6 +474,7 @@ Suggested fields:
 id
 workspace_id
 opportunity_id
+domain_candidate_id nullable
 dimension
 solution_type
 name
@@ -280,9 +485,13 @@ created_at
 updated_at
 ```
 
-Digital and Vertical are dimensions within Nura, not separate product identities.
+Digital and Vertical are dimensions inside Nura, not separate product identities.
 
-## 11. Execution
+A solution must reference the discovery/validation context that justified its selection.
+
+---
+
+## 15. Execution
 
 Represents actual work performed against a selected solution.
 
@@ -304,13 +513,13 @@ Statuses:
 
 `READY | RUNNING | BLOCKED | FAILED | CANCELLED | COMPLETED`
 
-Execution may create artifacts and execution events.
+Execution completion does not prove business outcome.
 
-## 12. ExecutionEvent
+---
 
-Represents an immutable or append-oriented record of meaningful execution activity.
+## 16. ExecutionEvent and Artifact
 
-Suggested fields:
+### ExecutionEvent
 
 ```text
 id
@@ -324,13 +533,9 @@ payload_reference
 occurred_at
 ```
 
-Sensitive provider payloads should not be copied into general event data unless required and protected.
+Events should be append-oriented and auditable.
 
-## 13. Artifact
-
-Represents a produced or received deliverable.
-
-Suggested fields:
+### Artifact
 
 ```text
 id
@@ -345,11 +550,13 @@ created_at
 created_by
 ```
 
-The application stores references/metadata while object storage owns the actual binary content where applicable.
+Application records should store metadata/references while object storage owns binary content where applicable.
 
-## 14. Verification
+---
 
-Represents a deliberate check of an execution/delivery result.
+## 17. Verification
+
+Represents a deliberate check of execution or delivery results.
 
 Suggested fields:
 
@@ -369,11 +576,13 @@ Statuses:
 
 `PENDING | PASSED | FAILED | NEEDS_REVIEW`
 
-Passing execution does not automatically create `OUTCOME_VERIFIED`.
+Passing execution does not automatically create a verified business outcome.
 
-## 15. Outcome
+---
 
-Represents a business result.
+## 18. Outcome
+
+Represents a business result that can be recorded and explicitly verified.
 
 Suggested fields:
 
@@ -393,15 +602,17 @@ recorded_at
 verified_at
 ```
 
-Outcome statuses should distinguish at minimum:
+Statuses:
 
 `RECORDED | VERIFIED | DISPUTED`
 
-A verified outcome requires explicit verification evidence.
+`VERIFIED` requires explicit outcome evidence and a valid verification action.
 
-## 16. LearningRecord
+---
 
-Captures reusable knowledge from completed workflows.
+## 19. LearningRecord
+
+Captures reusable knowledge after execution and outcome review.
 
 Suggested fields:
 
@@ -419,7 +630,13 @@ created_at
 created_by
 ```
 
-## 17. Connector
+Productization must follow:
+
+`Signal → Repeated Problem → Evidence → Validation → Pilot → Repeatable Outcome → Productization`
+
+---
+
+## 20. Connector
 
 Represents an external provider integration.
 
@@ -439,11 +656,13 @@ created_at
 updated_at
 ```
 
-`credential_reference` is a secret-store reference or opaque identifier, never a plaintext credential.
+`credential_reference` is an opaque secret-store reference and is never a plaintext credential.
 
-## 18. AuditEvent
+---
 
-Represents security- and workflow-relevant activity.
+## 21. AuditEvent
+
+Represents security- and workflow-significant activity.
 
 Suggested fields:
 
@@ -463,9 +682,11 @@ metadata_json
 occurred_at
 ```
 
-Audit records should be append-oriented and protected from ordinary user modification.
+Audit records are append-oriented and protected from ordinary user modification.
 
-## 19. API Conventions
+---
+
+## 22. API Conventions
 
 Base path:
 
@@ -473,9 +694,7 @@ Base path:
 
 JSON is the default representation.
 
-### Standard response envelope
-
-Successful responses should use a consistent structure such as:
+Success envelope:
 
 ```json
 {
@@ -486,7 +705,7 @@ Successful responses should use a consistent structure such as:
 }
 ```
 
-List responses:
+List envelope:
 
 ```json
 {
@@ -498,9 +717,7 @@ List responses:
 }
 ```
 
-## 20. API Error Contract
-
-Errors should use:
+Errors:
 
 ```json
 {
@@ -515,22 +732,13 @@ Errors should use:
 
 Recommended error codes:
 
-- `UNAUTHENTICATED`
-- `FORBIDDEN`
-- `NOT_FOUND`
-- `VALIDATION_ERROR`
-- `INVALID_STATE_TRANSITION`
-- `CONFLICT`
-- `IDEMPOTENCY_CONFLICT`
-- `CONNECTOR_UNAVAILABLE`
-- `CONNECTOR_AUTH_REQUIRED`
-- `EXTERNAL_PROVIDER_ERROR`
-- `RATE_LIMITED`
-- `INTERNAL_ERROR`
+`UNAUTHENTICATED | FORBIDDEN | NOT_FOUND | VALIDATION_ERROR | INVALID_STATE_TRANSITION | VALIDATION_REQUIRED | CONFLICT | IDEMPOTENCY_CONFLICT | CONNECTOR_UNAVAILABLE | CONNECTOR_AUTH_REQUIRED | EXTERNAL_PROVIDER_ERROR | RATE_LIMITED | INTERNAL_ERROR`
 
-Clients should not depend on human-readable error messages for control flow.
+Clients must not use human-readable messages for control flow.
 
-## 21. Core API Surface
+---
+
+## 23. Core API Surface
 
 ### Demand
 
@@ -550,9 +758,27 @@ PATCH  /api/v1/opportunities/:id
 POST   /api/v1/opportunities/:id/score
 ```
 
-### Validation
+### Discovery
 
 ```text
+POST   /api/v1/opportunities/:id/context
+GET    /api/v1/opportunities/:id/context
+POST   /api/v1/opportunities/:id/domains
+GET    /api/v1/opportunities/:id/domains
+PATCH  /api/v1/domains/:id
+POST   /api/v1/domains/:id/workflows
+GET    /api/v1/domains/:id/workflows
+PATCH  /api/v1/workflows/:id
+POST   /api/v1/workflows/:id/problems
+GET    /api/v1/workflows/:id/problems
+PATCH  /api/v1/problems/:id
+```
+
+### Evidence and validation
+
+```text
+POST   /api/v1/evidence
+GET    /api/v1/evidence
 POST   /api/v1/opportunities/:id/validations
 GET    /api/v1/opportunities/:id/validations
 POST   /api/v1/validations/:id/decision
@@ -565,6 +791,8 @@ POST   /api/v1/opportunities/:id/solutions
 GET    /api/v1/opportunities/:id/solutions
 POST   /api/v1/solutions/:id/select
 ```
+
+Solution selection must fail when required discovery/validation gates are not satisfied.
 
 ### Execution
 
@@ -608,11 +836,13 @@ POST   /api/v1/connectors/:id/disable
 GET    /api/v1/audit-events
 ```
 
-Exact endpoint implementation may evolve, but domain boundaries must remain consistent with this contract.
+Exact endpoint naming may evolve, but the domain boundaries and causal order are contractually stable.
 
-## 22. Pagination, Filtering and Sorting
+---
 
-List endpoints should use cursor pagination for scalable datasets.
+## 24. Pagination, Filtering and Sorting
+
+List endpoints should use cursor pagination.
 
 Common parameters:
 
@@ -628,25 +858,19 @@ created_before
 
 Filters must be applied within authorized tenant/workspace scope.
 
-## 23. Idempotency
+---
 
-Mutating endpoints that can safely be retried should accept:
+## 25. Idempotency and Concurrency
+
+Retryable mutating endpoints should accept:
 
 `Idempotency-Key: <unique-key>`
 
-The server should persist enough information to ensure the same key does not accidentally create duplicate business effects.
+The idempotency scope includes authenticated tenant/workspace and endpoint/action context.
 
-Idempotency scope should include the authenticated tenant/workspace and endpoint/action context.
+Reusing a key with materially different request parameters returns `IDEMPOTENCY_CONFLICT`.
 
-If the same key is reused with materially different request parameters, return:
-
-`IDEMPOTENCY_CONFLICT`.
-
-## 24. Optimistic Concurrency
-
-Where multiple operators may update the same record, the API should support a version or updated-at check.
-
-Example:
+Where concurrent operators may update a record, support optimistic concurrency using a version or updated-at check:
 
 ```json
 {
@@ -654,11 +878,11 @@ Example:
 }
 ```
 
-A stale mutation should return `CONFLICT` rather than silently overwriting newer state.
+Stale writes return `CONFLICT` rather than silently overwriting newer state.
 
-## 25. Connector Architecture
+---
 
-Nura uses a normalized connector boundary:
+## 26. Connector Architecture
 
 ```text
 Nura Domain
@@ -672,9 +896,7 @@ External System
 
 The domain layer must not contain provider-specific HTTP details.
 
-## 26. Normalized Connector Contract
-
-Conceptual interface:
+Normalized interface:
 
 ```ts
 interface NuraConnector {
@@ -686,7 +908,7 @@ interface NuraConnector {
 }
 ```
 
-Normalized request:
+Request:
 
 ```ts
 interface ConnectorRequest {
@@ -701,7 +923,7 @@ interface ConnectorRequest {
 }
 ```
 
-Normalized result:
+Result:
 
 ```ts
 interface ConnectorResult {
@@ -718,22 +940,13 @@ interface ConnectorResult {
 }
 ```
 
-Provider adapters may translate provider-specific requests/responses internally.
+Provider adapters translate provider-specific schemas internally.
 
-## 27. Connector Security Rules
+---
 
-1. Credentials belong to the tenant/workspace ownership boundary.
-2. Credentials are stored in a secret mechanism, not ordinary domain rows in plaintext.
-3. API responses never return secret values.
-4. Logs must redact tokens, cookies, authorization headers, and sensitive payload fields.
-5. Connector scopes should be least-privilege.
-6. Connector actions must be auditable.
-7. External destructive/consequential actions require policy/confirmation.
-8. Connector failures must distinguish retryable from non-retryable errors.
+## 27. External Data Ingestion
 
-## 28. External Data Ingestion
-
-External demand sources enter Nura through an ingestion boundary:
+External sources enter through an ingestion boundary:
 
 ```text
 External Source
@@ -749,31 +962,44 @@ DemandSignal
 Evidence
       ↓
 Opportunity
+      ↓
+Discovery Core
 ```
 
-The ingestion layer must preserve provenance and avoid silently converting source content into business facts.
+The ingestion layer must preserve provenance and must not silently convert source content into business facts.
 
-## 29. Webhooks and Async Events
+Temporary bridges such as automation platforms are implementation choices, not architectural entities in the Nura domain model.
 
-When supported by a provider, webhook processing should:
+---
+
+## 28. Webhooks and Async Events
+
+Webhook processing should:
 
 1. authenticate/verify the incoming event;
 2. record provider event identity;
 3. enforce idempotency;
 4. normalize payload;
 5. persist relevant state/event;
-6. emit an internal domain/application event where needed;
+6. emit internal events when required;
 7. audit the processing result.
 
-Webhook handlers must be safe against duplicate delivery.
+Duplicate delivery must be safe.
 
-## 30. Internal Domain Events
+---
+
+## 29. Internal Domain Events
 
 Examples:
 
 ```text
 DemandSignalCaptured
 OpportunityCreated
+ContextDiscovered
+DomainCandidateCreated
+WorkflowDiscovered
+ProblemPatternIdentified
+EvidenceRecorded
 OpportunityScored
 ValidationRecorded
 SolutionSelected
@@ -789,17 +1015,25 @@ LearningRecorded
 
 Events should carry stable IDs and correlation context where asynchronous processing is used.
 
-## 31. State Transition Contract
+---
 
-The API must enforce meaningful transitions.
+## 30. State Transition Contract
 
-Examples:
+Discovery transitions:
 
 ```text
 CAPTURED → NORMALIZED
-NORMALIZED → SCORING
+NORMALIZED → CONTEXT_DISCOVERY
+CONTEXT_DISCOVERY → WORKFLOW_DISCOVERY
+WORKFLOW_DISCOVERY → PROBLEM_DISCOVERY
+PROBLEM_DISCOVERY → SCORING
 SCORING → VALIDATING
 VALIDATING → VALIDATED | REJECTED | PARKED
+```
+
+Solution/execution transitions:
+
+```text
 VALIDATED → SOLUTION_SELECTED
 SOLUTION_SELECTED → EXECUTING
 EXECUTING → VERIFYING
@@ -808,124 +1042,158 @@ DELIVERED → OUTCOME_RECORDED
 OUTCOME_RECORDED → LEARNED
 ```
 
-A transition endpoint should reject invalid jumps such as:
+The API must reject invalid jumps such as:
 
 ```text
-CAPTURED → OUTCOME_VERIFIED
+CAPTURED → SOLUTION_SELECTED
 NORMALIZED → LEARNED
-EXECUTING → OUTCOME_VERIFIED
+UNVALIDATED → EXECUTING
+EXECUTION_COMPLETED → OUTCOME_VERIFIED
 ```
 
-unless the server explicitly determines that required intermediary evidence already exists.
+A solution may remain absent after validation if no appropriate intervention exists; `NO_ACTION` is a valid explicit decision.
 
-## 32. Search and Retrieval
+---
 
-Search should operate within tenant/workspace authorization.
+## 31. AI Boundary Contract
 
-Minimum searchable objects:
+AI may assist with:
 
-- DemandSignal
-- Opportunity
-- Solution
-- Execution
-- Artifact
-- LearningRecord
+- normalization;
+- clustering;
+- context summarization;
+- domain candidate suggestions;
+- workflow extraction;
+- problem-pattern hypotheses;
+- evidence classification;
+- scoring recommendations;
+- validation experiment suggestions;
+- solution recommendations.
 
-Search results should return enough type/context metadata to prevent ambiguous references.
+AI must not silently:
 
-## 33. Data Retention and Deletion Boundary
+- invent evidence;
+- mark a problem validated without required evidence;
+- assign a fixed industry merely to satisfy a schema;
+- select a solution solely because a model prefers it;
+- claim execution happened when it did not;
+- claim a business outcome was verified without verification evidence.
 
-Retention rules are policy-driven and belong in the security/ownership contract.
+AI-generated values must carry provenance/status such as `INFERRED` or `RECOMMENDED` until accepted or supported.
 
-The data layer must nevertheless support:
+---
 
-- soft deletion where required;
-- explicit deletion state;
-- artifact reference cleanup;
-- audit preservation where legally/operationally required;
-- tenant-level export/deletion workflows.
+## 32. Integrity and Security Rules
 
-Deleting a business record must not accidentally expose or orphan another tenant's data.
+- All reads/writes are authorization-scoped.
+- Tenant isolation is enforced server-side.
+- Workspace isolation is enforced server-side.
+- Secrets are never returned in ordinary API responses.
+- Sensitive connector payloads are redacted from logs.
+- Evidence records are protected from ordinary mutation after verification where policy requires immutability.
+- Audit events are append-oriented.
+- Consequential external actions require explicit policy/confirmation where applicable.
+- API state transitions are validated on the server.
+- Unknown-first inputs are accepted.
 
-## 34. API Ownership Rules
+---
 
-The server is authoritative for:
+## 33. Minimum Discovery Core Data Contract
 
-- tenant/workspace scope;
-- role authorization;
-- state transitions;
-- validation requirements;
-- evidence requirements;
-- connector permission checks;
-- audit creation;
-- secret references;
-- outcome verification.
-
-The client is responsible for presentation, interaction, local validation, and confirmation UX—not for enforcing security or business truth.
-
-## 35. MVP Data Persistence
-
-The smallest implementation should persist enough state to prove one complete real workflow.
-
-Minimum viable persistent path:
+The smallest implementation that qualifies as Discovery Core must persist:
 
 ```text
 DemandSignal
-  → Evidence
-  → Opportunity
-  → Score
-  → Validation
-  → Solution
-  → Execution
-  → Verification
-  → Outcome
-  → Learning
+Opportunity
+BusinessContext
+DomainCandidate
+Workflow
+ProblemPattern
+Evidence
+Score
+Validation
 ```
 
-Do not implement a giant schema merely for theoretical future modules.
+The following must be true:
 
-## 36. API Acceptance Criteria
+1. A new signal can enter without a predefined industry.
+2. An opportunity can exist without a solution.
+3. A domain candidate can exist with `solution_id = null`.
+4. A workflow can be recorded before solution selection.
+5. A problem can remain a hypothesis until validated.
+6. Evidence can be traced to a source.
+7. Scores expose their reasoning/evidence.
+8. Validation is an explicit state and action.
+9. Solution selection is blocked until required validation.
+10. A validated opportunity may still choose `NO_ACTION`.
 
-The implementation is acceptable when:
+---
 
-1. All core records are tenant/workspace scoped.
-2. An opportunity can be traced to its originating demand/evidence.
-3. Scores retain explainability metadata.
-4. Validation decisions retain evidence.
-5. Solution selection is persisted.
-6. Execution produces auditable state/events.
-7. Verification is a separate persisted operation.
-8. Outcomes require evidence before verification.
-9. Connector calls use a normalized adapter boundary.
-10. Retryable mutations support idempotency where appropriate.
-11. API errors are structured and stable.
-12. Invalid lifecycle transitions are rejected server-side.
-13. Secrets never appear in API responses or ordinary logs.
-14. Audit events preserve consequential mutations.
-15. The complete MVP path can be exercised end-to-end without fake state.
+## 34. Required Acceptance Tests
 
-## 37. Explicit Non-Goals
+### Unknown Domain
 
-This contract does not require:
+Input a real signal from a domain not known by the schema. The system must create a domain candidate without schema modification or a fixed catalogue match.
 
-- a microservice architecture;
-- event sourcing for every table;
-- a large message-bus deployment;
-- a marketplace architecture;
-- a separate NuraHub API;
-- a Nuralabs API or runtime dependency;
-- provider-specific schemas in the core domain;
-- autonomous execution without policy and confirmation.
+### No Premature Solution
 
-The implementation should prefer the smallest architecture that satisfies this contract.
+Create a signal/opportunity with incomplete context. The system must keep `solution = null` and reject premature solution selection.
 
-## 38. Canonical References
+### Context Before Solution
 
-This contract must be implemented together with:
+An opportunity cannot select a solution before required context/workflow/problem discovery has completed according to policy.
 
-1. `docs/NURA_FINAL_CONCEPT_AND_ARCHITECTURE.md`
-2. `docs/NURA_PRODUCT_REQUIREMENTS_AND_MVP_SPEC.md`
-3. `docs/NURA_TECHNICAL_SPEC.md`
-4. `docs/NURA_UX_UI_SPEC.md`
+### Evidence Lineage
 
-If an older document conflicts with these references, these canonical documents take precedence.
+Every material validation/scoring claim must reference supporting evidence or explicitly state that it is an inference.
+
+### Explainable Score
+
+A score must expose dimensions, explanation, model/version metadata, and supporting evidence references.
+
+### Validation Gate
+
+An unvalidated opportunity cannot transition into solution selection or execution.
+
+### Tenant Isolation
+
+A tenant/workspace cannot read or mutate another tenant/workspace's discovery or execution records.
+
+### Idempotent Ingestion
+
+Repeated ingestion of the same external event must not create duplicate business effects.
+
+### No Fake Outcome
+
+Execution completion without business evidence must not create `Outcome.status = VERIFIED`.
+
+### AI Boundary
+
+AI recommendations cannot silently mutate authoritative validation/evidence/outcome states.
+
+### Productization Gate
+
+A single weak signal cannot automatically become a productized vertical. Repeatability and validated outcomes are required.
+
+---
+
+## 35. Non-Goals
+
+This contract does not define:
+
+- a separate Vertical System;
+- a NuraHub product;
+- a fixed list of industries;
+- a Nuralabs dependency;
+- a marketplace of prebuilt vertical products;
+- a requirement to integrate every external source before Discovery Core works;
+- autonomous authority for AI to declare business truth;
+- fake or simulated production outcomes.
+
+---
+
+## 36. Contract Invariant
+
+> **Nura must be able to receive an unknown demand signal, discover its real context and domain, map the workflow, identify the problem, preserve evidence, validate the opportunity, and only then select and execute an appropriate solution.**
+
+The data/API/connector layer exists to preserve that causal chain, tenant ownership, evidence lineage, and verifiable outcome integrity.
