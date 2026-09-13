@@ -188,6 +188,6 @@ The test suite verifies Phase 01 identity/ownership, Phase 02 signal/opportunity
   - `migrations/0003_phase_03_context_domains.sql`
 - **Secrets:** configure through Cloudflare environment/secrets; never commit plaintext credentials.
 - **Production URL:** https://nura-4nr.pages.dev
-- **Latest deployment:** https://03d8c724.nura-4nr.pages.dev
-- **Status:** Phase 03 verified locally; production deployment status is updated after the Phase 03 BYOK deploy.
+- **Latest verified Phase 03 deployment:** https://9a3edd76.nura-4nr.pages.dev
+- **Status:** Phase 03 verified locally and deployed through Cloudflare BYOK.
 - **Last updated:** 2026-09-13.
