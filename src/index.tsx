@@ -3,10 +3,19 @@ import { serveStatic } from 'hono/cloudflare-workers'
 import { AppError } from './core/errors'
 import { appShell } from './core/html'
 import { clearSessionCookie, readCookie, SESSION_COOKIE, sessionCookie } from './core/cookies'
-import { requireWorkspaceCreate } from './core/permissions'
+import { requireDiscoveryWrite, requireWorkspaceCreate } from './core/permissions'
 import { success } from './core/responses'
 import { hashPassword, sha256, verifyPassword } from './core/security'
-import { requireEmail, requireObject, requireString } from './core/validation'
+import {
+  optionalMetadata,
+  optionalString,
+  requireEmail,
+  requireEnum,
+  requireObject,
+  requireObservedContent,
+  requireString,
+  requireUuid,
+} from './core/validation'
 import { requestTracing, requireAuth } from './middleware/request-context'
 import {
   createBootstrap,
@@ -19,6 +28,17 @@ import {
   listAuthorizedWorkspaces,
   resolveSession,
 } from './repositories/identity'
+import {
+  createDemandSignal,
+  formOpportunity,
+  getDemandSignal,
+  getOpportunity,
+  listDemandSignals,
+  listOpportunities,
+  OPPORTUNITY_STATUSES,
+  SIGNAL_SOURCE_TYPES,
+  updateOpportunityStatus,
+} from './repositories/discovery'
 import type { AppEnv } from './types'
 
 const app = new Hono<AppEnv>()
@@ -29,8 +49,12 @@ app.use('/api/v1/tenants/*', requireAuth)
 app.use('/api/v1/workspaces', requireAuth)
 app.use('/api/v1/workspaces/*', requireAuth)
 app.use('/api/v1/auth/session', requireAuth)
+app.use('/api/v1/signals', requireAuth)
+app.use('/api/v1/signals/*', requireAuth)
+app.use('/api/v1/opportunities', requireAuth)
+app.use('/api/v1/opportunities/*', requireAuth)
 
-app.get('/health', (c) => c.json({ status: 'ok', service: 'nura', phase: '01', request_id: c.get('requestId') }))
+app.get('/health', (c) => c.json({ status: 'ok', service: 'nura', phase: '02', request_id: c.get('requestId') }))
 
 app.post('/api/v1/auth/register', async (c) => {
   if (c.env.ALLOW_PUBLIC_SIGNUP === 'false') {
@@ -129,6 +153,83 @@ app.get('/api/v1/workspaces/:workspaceId', async (c) => {
   return success(c, workspace)
 })
 
+app.post('/api/v1/signals', async (c) => {
+  const auth = c.get('auth')
+  requireDiscoveryWrite(auth)
+  const body = requireObject(await safeJson(c))
+  const sourceType = requireEnum(body, 'source_type', SIGNAL_SOURCE_TYPES)
+  const rawContent = requireObservedContent(body, 'raw_content', 5_000)
+  const sourceReference = optionalString(body, 'source_reference', 1_000)
+  const externalId = optionalString(body, 'external_id', 200)
+  const captureMechanism = optionalString(body, 'capture_mechanism', 80) || 'manual'
+  const headerIdempotencyKey = c.req.header('idempotency-key')
+  if (headerIdempotencyKey && headerIdempotencyKey.length > 200) {
+    throw new AppError(400, 'VALIDATION_ERROR', 'Idempotency-Key must contain at most 200 characters.')
+  }
+  const result = await createDemandSignal(c.env.DB, auth, {
+    sourceType,
+    sourceReference,
+    externalId,
+    rawContent,
+    normalizedContent: normalizeSignal(rawContent),
+    captureMechanism,
+    metadata: optionalMetadata(body),
+    idempotencyKey: headerIdempotencyKey?.trim() || null,
+  })
+  return success(c, result.signal, result.created ? 201 : 200)
+})
+
+app.get('/api/v1/signals', async (c) => success(c, await listDemandSignals(c.env.DB, c.get('auth'))))
+
+app.get('/api/v1/signals/:signalId', async (c) => {
+  const signal = await getDemandSignal(c.env.DB, c.get('auth'), requireUuid(c.req.param('signalId'), 'signalId'))
+  if (!signal) throw new AppError(404, 'NOT_FOUND', 'Demand signal was not found in the authorized workspace.')
+  return success(c, signal)
+})
+
+app.post('/api/v1/opportunities/from-signal', async (c) => {
+  const auth = c.get('auth')
+  requireDiscoveryWrite(auth)
+  const body = requireObject(await safeJson(c))
+  const signalId = requireUuid(requireString(body, 'signal_id', 36, 36), 'signal_id')
+  const title = optionalString(body, 'title', 100) || undefined
+  const summary = optionalString(body, 'summary', 500) || undefined
+  const result = await formOpportunity(c.env.DB, auth, signalId, { title, summary })
+  return success(c, result.opportunity, result.created ? 201 : 200)
+})
+
+app.post('/api/v1/opportunities', async (c) => {
+  const auth = c.get('auth')
+  requireDiscoveryWrite(auth)
+  const body = requireObject(await safeJson(c))
+  const signalId = requireUuid(requireString(body, 'signal_id', 36, 36), 'signal_id')
+  const title = optionalString(body, 'title', 100) || undefined
+  const summary = optionalString(body, 'summary', 500) || undefined
+  const result = await formOpportunity(c.env.DB, auth, signalId, { title, summary })
+  return success(c, result.opportunity, result.created ? 201 : 200)
+})
+
+app.get('/api/v1/opportunities', async (c) => success(c, await listOpportunities(c.env.DB, c.get('auth'))))
+
+app.get('/api/v1/opportunities/:opportunityId', async (c) => {
+  const opportunity = await getOpportunity(
+    c.env.DB,
+    c.get('auth'),
+    requireUuid(c.req.param('opportunityId'), 'opportunityId'),
+  )
+  if (!opportunity) throw new AppError(404, 'NOT_FOUND', 'Opportunity was not found in the authorized workspace.')
+  return success(c, opportunity)
+})
+
+app.patch('/api/v1/opportunities/:opportunityId/status', async (c) => {
+  const auth = c.get('auth')
+  requireDiscoveryWrite(auth)
+  const id = requireUuid(c.req.param('opportunityId'), 'opportunityId')
+  const body = requireObject(await safeJson(c))
+  const status = requireEnum(body, 'status', OPPORTUNITY_STATUSES)
+  return success(c, await updateOpportunityStatus(c.env.DB, auth, id, status))
+})
+
 app.get('/', (c) => c.html(appShell()))
 
 app.notFound((c) => c.json({
@@ -161,6 +262,10 @@ app.onError((error, c) => {
     },
   }, known.status)
 })
+
+function normalizeSignal(content: string): string {
+  return content.replace(/\s+/g, ' ').trim()
+}
 
 async function safeJson(c: Parameters<typeof requireObject>[0] extends never ? never : any): Promise<unknown> {
   try {
