@@ -97,9 +97,11 @@ async function loadWorkspace() {
 }
 
 async function renderDiscovery(message = '') {
-  const [signals, opportunities] = await Promise.all([
+  const [signals, opportunities, contexts, domains] = await Promise.all([
     api('/api/v1/signals'),
     api('/api/v1/opportunities'),
+    api('/api/v1/contexts'),
+    api('/api/v1/domains'),
   ])
   logoutButton.hidden = false
   app.innerHTML = `
@@ -115,13 +117,15 @@ async function renderDiscovery(message = '') {
         <a class="nav-item" href="#capture">Capture Signal</a>
         <a class="nav-item active" href="#signals">Signals <span>${signals.length}</span></a>
         <a class="nav-item" href="#opportunities">Opportunities <span>${opportunities.length}</span></a>
-        <span class="nav-divider">Phase 02</span>
-        <p class="nav-note">Demand → Opportunity</p>
+        <a class="nav-item" href="#contexts">Contexts <span>${contexts.length}</span></a>
+        <a class="nav-item" href="#domains">Domains <span>${domains.length}</span></a>
+        <span class="nav-divider">Phase 03</span>
+        <p class="nav-note">Opportunity → Context → Domain Candidate</p>
       </aside>
       <article class="content-panel">
-        <p class="eyebrow">Discovery / Phase 02</p>
-        <h1>Demand yang dapat ditelusuri.</h1>
-        <p class="lede compact">Tangkap observasi asli, pertahankan provenance, lalu bentuk opportunity tanpa menganggapnya sudah tervalidasi.</p>
+        <p class="eyebrow">Discovery / Phase 03</p>
+        <h1>Konteks sebelum solusi.</h1>
+        <p class="lede compact">Telusuri demand ke opportunity, catat konteks apa adanya, lalu bentuk domain candidate dinamis tanpa memaksakan kepastian atau solusi.</p>
         ${message ? `<p class="form-message" role="status">${escapeHtml(message)}</p>` : ''}
         <section class="capture-panel" id="capture">
           <div><p class="eyebrow">Manual capture</p><h2>Catat demand signal</h2></div>
@@ -138,7 +142,19 @@ async function renderDiscovery(message = '') {
         </section>
         <section class="discovery-section" id="opportunities">
           <div class="section-heading"><div><p class="eyebrow">Candidate, not validation</p><h2>Opportunities</h2></div><span class="count-badge">${opportunities.length}</span></div>
-          <div class="record-list">${opportunities.length ? opportunities.map(opportunityCard).join('') : emptyState('Belum ada opportunity', 'Bentuk opportunity dari signal yang relevan.')}</div>
+          <div class="record-list">${opportunities.length ? opportunities.map((opportunity) => opportunityCard(
+            opportunity,
+            contexts.find((context) => context.opportunity_id === opportunity.id),
+            domains.filter((domain) => domain.opportunity_id === opportunity.id),
+          )).join('') : emptyState('Belum ada opportunity', 'Bentuk opportunity dari signal yang relevan.')}</div>
+        </section>
+        <section class="discovery-section" id="contexts">
+          <div class="section-heading"><div><p class="eyebrow">Observed context</p><h2>Business Contexts</h2></div><span class="count-badge">${contexts.length}</span></div>
+          <p class="section-copy">Nilai yang belum diketahui tetap ditampilkan sebagai unknown—bukan diisi dengan asumsi.</p>
+        </section>
+        <section class="discovery-section" id="domains">
+          <div class="section-heading"><div><p class="eyebrow">Dynamic candidates</p><h2>Domain Candidates</h2></div><span class="count-badge">${domains.length}</span></div>
+          <p class="section-copy">Domain adalah kandidat yang dapat ditinjau. Tidak ada katalog industri tetap dan solution tetap null.</p>
         </section>
       </article>
     </section>`
@@ -151,6 +167,8 @@ async function renderDiscovery(message = '') {
   document.querySelector('#signal-form').addEventListener('submit', captureSignal)
   document.querySelectorAll('[data-form-opportunity]').forEach((button) => button.addEventListener('click', () => formOpportunity(button.dataset.formOpportunity)))
   document.querySelectorAll('[data-status]').forEach((select) => select.addEventListener('change', () => changeOpportunityStatus(select.dataset.status, select.value)))
+  document.querySelectorAll('[data-context-form]').forEach((form) => form.addEventListener('submit', createContext))
+  document.querySelectorAll('[data-domain-form]').forEach((form) => form.addEventListener('submit', createDomain))
 }
 
 function signalCard(signal) {
@@ -162,7 +180,7 @@ function signalCard(signal) {
   </article>`
 }
 
-function opportunityCard(opportunity) {
+function opportunityCard(opportunity, context, domains) {
   const transitions = {
     NEW: ['REVIEW', 'DISMISSED'], REVIEW: ['QUALIFIED', 'DISMISSED'],
     QUALIFIED: ['REVIEW', 'DISMISSED'], DISMISSED: ['REVIEW'],
@@ -171,7 +189,40 @@ function opportunityCard(opportunity) {
     <div class="record-topline"><span class="source-badge">OPPORTUNITY</span><span class="status-pill status-${opportunity.status.toLowerCase()}">${escapeHtml(opportunity.status)}</span></div>
     <h3>${escapeHtml(opportunity.title)}</h3><p>${escapeHtml(opportunity.summary)}</p>
     <div class="record-footer"><small>${opportunity.source_signal_count} linked signal · ${formatTime(opportunity.created_at)}</small><label>Status<select data-status="${opportunity.id}"><option selected>${opportunity.status}</option>${transitions[opportunity.status].map((status) => `<option>${status}</option>`).join('')}</select></label></div>
+    ${context ? contextPanel(context, domains) : contextForm(opportunity.id)}
   </article>`
+}
+
+function contextForm(opportunityId) {
+  return `<section class="context-panel">
+    <p class="eyebrow">Next: Business Context</p>
+    <form class="context-form" data-context-form="${opportunityId}">
+      <label>Observasi konteks <small>opsional</small><textarea name="observed_note" rows="2" maxlength="2000" placeholder="Fakta yang benar-benar diketahui"></textarea></label>
+      <label>Operating context <small>opsional</small><textarea name="operating_context" rows="2" maxlength="2000" placeholder="Lingkungan operasional yang diketahui"></textarea></label>
+      <label>Unknowns <small>pisahkan dengan koma</small><input name="unknowns" placeholder="business size, order volume, exact process"></label>
+      <label>Referensi sumber <small>opsional</small><input name="source_reference" maxlength="1000" placeholder="Wawancara, tiket, dokumen"></label>
+      <button class="button button-secondary" type="submit">Simpan business context</button>
+    </form>
+  </section>`
+}
+
+function contextPanel(context, domains) {
+  const facts = Object.values(context.observed_facts || {}).filter(Boolean)
+  return `<section class="context-panel">
+    <div class="record-topline"><span class="source-badge">BUSINESS CONTEXT</span><span class="status-pill">${escapeHtml(context.interpretation_type)}</span></div>
+    <p>${facts.length ? facts.map(escapeHtml).join(' · ') : 'Belum ada observed fact.'}</p>
+    <dl class="provenance"><div><dt>Operating context</dt><dd>${escapeHtml(context.operating_context || 'Tidak diketahui')}</dd></div><div><dt>Unknowns</dt><dd>${context.unknowns.length ? context.unknowns.map(escapeHtml).join(', ') : 'Tidak dicatat'}</dd></div><div><dt>Source</dt><dd>${escapeHtml(context.source_reference || context.source_type)}</dd></div></dl>
+    <div class="domain-list">${domains.map(domainCard).join('')}</div>
+    <form class="domain-form" data-domain-form="${context.id}" data-opportunity-id="${context.opportunity_id}">
+      <label>Domain candidate<input name="label" required maxlength="160" placeholder="Tulis domain yang muncul dari konteks"></label>
+      <label>Rationale <small>opsional</small><input name="rationale" maxlength="2000" placeholder="Mengapa ini kandidat, bukan fakta tervalidasi"></label>
+      <button class="button button-secondary" type="submit">Bentuk domain candidate</button>
+    </form>
+  </section>`
+}
+
+function domainCard(domain) {
+  return `<article class="domain-card"><div><strong>${escapeHtml(domain.label)}</strong><small>${escapeHtml(domain.status)} · ${escapeHtml(domain.interpretation_type)}</small></div><span class="solution-null">solution = null</span>${domain.rationale ? `<p>${escapeHtml(domain.rationale)}</p>` : ''}</article>`
 }
 
 function emptyState(title, text) {
@@ -196,6 +247,53 @@ async function formOpportunity(signalId) {
   try {
     await api('/api/v1/opportunities/from-signal', { method: 'POST', body: JSON.stringify({ signal_id: signalId }) })
     await renderDiscovery('Opportunity dibentuk sebagai kandidat—belum tervalidasi dan belum memiliki solusi.')
+  } catch (error) { await renderDiscovery(error.message) }
+}
+
+async function createContext(event) {
+  event.preventDefault()
+  const form = event.currentTarget
+  const values = Object.fromEntries(new FormData(form))
+  const unknowns = String(values.unknowns || '').split(',').map((item) => item.trim()).filter(Boolean)
+  const observedNote = String(values.observed_note || '').trim()
+  try {
+    await api('/api/v1/contexts', {
+      method: 'POST',
+      headers: { 'idempotency-key': globalThis.crypto.randomUUID() },
+      body: JSON.stringify({
+        opportunity_id: form.dataset.contextForm,
+        observed_facts: observedNote ? { note: observedNote } : {},
+        operating_context: values.operating_context || null,
+        unknowns,
+        source_type: 'MANUAL',
+        source_reference: values.source_reference || null,
+        interpretation_type: 'OBSERVED',
+        provenance: { capture_mechanism: 'operator-entry' },
+      }),
+    })
+    await renderDiscovery('Business context tersimpan tanpa membuat nilai yang tidak diketahui.')
+  } catch (error) { await renderDiscovery(error.message) }
+}
+
+async function createDomain(event) {
+  event.preventDefault()
+  const form = event.currentTarget
+  const values = Object.fromEntries(new FormData(form))
+  try {
+    await api('/api/v1/domains/from-context', {
+      method: 'POST',
+      headers: { 'idempotency-key': globalThis.crypto.randomUUID() },
+      body: JSON.stringify({
+        opportunity_id: form.dataset.opportunityId,
+        business_context_id: form.dataset.domainForm,
+        label: values.label,
+        rationale: values.rationale || null,
+        interpretation_type: 'INFERRED',
+        source_type: 'MANUAL',
+        provenance: { capture_mechanism: 'operator-entry' },
+      }),
+    })
+    await renderDiscovery('Domain candidate tersimpan sebagai interpretasi; solution tetap null.')
   } catch (error) { await renderDiscovery(error.message) }
 }
 

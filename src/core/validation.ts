@@ -60,14 +60,47 @@ export function requireUuid(value: string, field = 'id'): string {
 }
 
 export function optionalMetadata(input: Record<string, unknown>): Record<string, unknown> {
-  const value = input.metadata
+  return optionalObject(input, 'metadata')
+}
+
+export function optionalObject(
+  input: Record<string, unknown>,
+  field: string,
+  maxSerializedLength = 4_000,
+): Record<string, unknown> {
+  const value = input[field]
   if (value === undefined || value === null) return {}
   if (typeof value !== 'object' || Array.isArray(value)) {
-    throw new AppError(400, 'VALIDATION_ERROR', 'metadata must be a JSON object.', { field: 'metadata' })
+    throw new AppError(400, 'VALIDATION_ERROR', `${field} must be a JSON object.`, { field })
   }
   const serialized = JSON.stringify(value)
-  if (serialized.length > 4_000) {
-    throw new AppError(400, 'VALIDATION_ERROR', 'metadata is too large.', { field: 'metadata' })
+  if (serialized.length > maxSerializedLength) {
+    throw new AppError(400, 'VALIDATION_ERROR', `${field} is too large.`, { field })
   }
   return value as Record<string, unknown>
+}
+
+export function optionalStringArray(
+  input: Record<string, unknown>,
+  field: string,
+  maxItems = 50,
+  maxItemLength = 500,
+): string[] {
+  const value = input[field]
+  if (value === undefined || value === null) return []
+  if (!Array.isArray(value) || value.length > maxItems || value.some((item) => (
+    typeof item !== 'string' || item.trim().length < 1 || item.trim().length > maxItemLength
+  ))) {
+    throw new AppError(400, 'VALIDATION_ERROR', `${field} must be an array of up to ${maxItems} non-empty strings.`, { field })
+  }
+  return value.map((item) => (item as string).trim())
+}
+
+export function optionalConfidence(input: Record<string, unknown>, field = 'confidence'): number | null {
+  const value = input[field]
+  if (value === undefined || value === null) return null
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value > 1) {
+    throw new AppError(400, 'VALIDATION_ERROR', `${field} must be a number between 0 and 1 or null.`, { field })
+  }
+  return value
 }

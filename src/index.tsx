@@ -7,8 +7,11 @@ import { requireDiscoveryWrite, requireWorkspaceCreate } from './core/permission
 import { success } from './core/responses'
 import { hashPassword, sha256, verifyPassword } from './core/security'
 import {
+  optionalConfidence,
   optionalMetadata,
+  optionalObject,
   optionalString,
+  optionalStringArray,
   requireEmail,
   requireEnum,
   requireObject,
@@ -39,6 +42,15 @@ import {
   SIGNAL_SOURCE_TYPES,
   updateOpportunityStatus,
 } from './repositories/discovery'
+import {
+  createBusinessContext,
+  createDomainCandidate,
+  getBusinessContext,
+  getDomainCandidate,
+  INTERPRETATION_TYPES,
+  listBusinessContexts,
+  listDomainCandidates,
+} from './repositories/context-domain'
 import type { AppEnv } from './types'
 
 const app = new Hono<AppEnv>()
@@ -53,8 +65,12 @@ app.use('/api/v1/signals', requireAuth)
 app.use('/api/v1/signals/*', requireAuth)
 app.use('/api/v1/opportunities', requireAuth)
 app.use('/api/v1/opportunities/*', requireAuth)
+app.use('/api/v1/contexts', requireAuth)
+app.use('/api/v1/contexts/*', requireAuth)
+app.use('/api/v1/domains', requireAuth)
+app.use('/api/v1/domains/*', requireAuth)
 
-app.get('/health', (c) => c.json({ status: 'ok', service: 'nura', phase: '02', request_id: c.get('requestId') }))
+app.get('/health', (c) => c.json({ status: 'ok', service: 'nura', phase: '03', request_id: c.get('requestId') }))
 
 app.post('/api/v1/auth/register', async (c) => {
   if (c.env.ALLOW_PUBLIC_SIGNUP === 'false') {
@@ -230,6 +246,102 @@ app.patch('/api/v1/opportunities/:opportunityId/status', async (c) => {
   return success(c, await updateOpportunityStatus(c.env.DB, auth, id, status))
 })
 
+app.post('/api/v1/contexts', async (c) => {
+  const auth = c.get('auth')
+  requireDiscoveryWrite(auth)
+  const body = requireObject(await safeJson(c))
+  const idempotencyKey = readIdempotencyKey(c.req.header('idempotency-key'))
+  const interpretationType = body.interpretation_type === undefined
+    ? 'OBSERVED'
+    : requireEnum(body, 'interpretation_type', INTERPRETATION_TYPES)
+  const result = await createBusinessContext(c.env.DB, auth, {
+    opportunityId: requireUuid(requireString(body, 'opportunity_id', 36, 36), 'opportunity_id'),
+    observedFacts: optionalObject(body, 'observed_facts'),
+    businessCharacteristics: optionalObject(body, 'business_characteristics'),
+    operatingContext: optionalString(body, 'operating_context', 2_000),
+    channels: optionalStringArray(body, 'channels'),
+    actors: optionalStringArray(body, 'actors'),
+    constraints: optionalStringArray(body, 'constraints'),
+    processClues: optionalStringArray(body, 'process_clues'),
+    unknowns: optionalStringArray(body, 'unknowns'),
+    sourceType: optionalString(body, 'source_type', 80) || 'UNKNOWN',
+    sourceReference: optionalString(body, 'source_reference', 1_000),
+    interpretationType,
+    confidence: optionalConfidence(body),
+    provenance: optionalObject(body, 'provenance'),
+    idempotencyKey,
+  })
+  return success(c, result.context, result.created ? 201 : 200)
+})
+
+app.get('/api/v1/contexts', async (c) => success(c, await listBusinessContexts(c.env.DB, c.get('auth'))))
+
+app.get('/api/v1/contexts/:contextId', async (c) => {
+  const context = await getBusinessContext(
+    c.env.DB,
+    c.get('auth'),
+    requireUuid(c.req.param('contextId'), 'contextId'),
+  )
+  if (!context) throw new AppError(404, 'NOT_FOUND', 'Business context was not found in the authorized workspace.')
+  return success(c, context)
+})
+
+app.post('/api/v1/domains/from-context', async (c) => {
+  const auth = c.get('auth')
+  requireDiscoveryWrite(auth)
+  const body = requireObject(await safeJson(c))
+  const idempotencyKey = readIdempotencyKey(c.req.header('idempotency-key'))
+  const interpretationType = body.interpretation_type === undefined
+    ? 'INFERRED'
+    : requireEnum(body, 'interpretation_type', INTERPRETATION_TYPES)
+  const result = await createDomainCandidate(c.env.DB, auth, {
+    opportunityId: requireUuid(requireString(body, 'opportunity_id', 36, 36), 'opportunity_id'),
+    businessContextId: requireUuid(requireString(body, 'business_context_id', 36, 36), 'business_context_id'),
+    label: requireString(body, 'label', 2, 160),
+    description: optionalString(body, 'description', 2_000),
+    rationale: optionalString(body, 'rationale', 2_000),
+    interpretationType,
+    confidence: optionalConfidence(body),
+    sourceType: optionalString(body, 'source_type', 80) || 'UNKNOWN',
+    sourceReference: optionalString(body, 'source_reference', 1_000),
+    provenance: optionalObject(body, 'provenance'),
+    idempotencyKey,
+  })
+  return success(c, result.domain, result.created ? 201 : 200)
+})
+
+app.post('/api/v1/domains', async (c) => {
+  const auth = c.get('auth')
+  requireDiscoveryWrite(auth)
+  const body = requireObject(await safeJson(c))
+  const idempotencyKey = readIdempotencyKey(c.req.header('idempotency-key'))
+  const interpretationType = body.interpretation_type === undefined
+    ? 'INFERRED'
+    : requireEnum(body, 'interpretation_type', INTERPRETATION_TYPES)
+  const result = await createDomainCandidate(c.env.DB, auth, {
+    opportunityId: requireUuid(requireString(body, 'opportunity_id', 36, 36), 'opportunity_id'),
+    businessContextId: requireUuid(requireString(body, 'business_context_id', 36, 36), 'business_context_id'),
+    label: requireString(body, 'label', 2, 160),
+    description: optionalString(body, 'description', 2_000),
+    rationale: optionalString(body, 'rationale', 2_000),
+    interpretationType,
+    confidence: optionalConfidence(body),
+    sourceType: optionalString(body, 'source_type', 80) || 'UNKNOWN',
+    sourceReference: optionalString(body, 'source_reference', 1_000),
+    provenance: optionalObject(body, 'provenance'),
+    idempotencyKey,
+  })
+  return success(c, result.domain, result.created ? 201 : 200)
+})
+
+app.get('/api/v1/domains', async (c) => success(c, await listDomainCandidates(c.env.DB, c.get('auth'))))
+
+app.get('/api/v1/domains/:domainId', async (c) => {
+  const domain = await getDomainCandidate(c.env.DB, c.get('auth'), requireUuid(c.req.param('domainId'), 'domainId'))
+  if (!domain) throw new AppError(404, 'NOT_FOUND', 'Domain candidate was not found in the authorized workspace.')
+  return success(c, domain)
+})
+
 app.get('/', (c) => c.html(appShell()))
 
 app.notFound((c) => c.json({
@@ -265,6 +377,14 @@ app.onError((error, c) => {
 
 function normalizeSignal(content: string): string {
   return content.replace(/\s+/g, ' ').trim()
+}
+
+function readIdempotencyKey(value: string | undefined): string | null {
+  if (!value) return null
+  if (value.length > 200) {
+    throw new AppError(400, 'VALIDATION_ERROR', 'Idempotency-Key must contain at most 200 characters.')
+  }
+  return value.trim() || null
 }
 
 async function safeJson(c: Parameters<typeof requireObject>[0] extends never ? never : any): Promise<unknown> {
