@@ -151,6 +151,7 @@ The test suite verifies signal capture, provenance, validation, idempotency, opp
   - `migrations/0001_phase_01_identity.sql`
   - `migrations/0002_phase_02_demand_opportunities.sql`
 - **Secrets:** configure through Cloudflare environment/secrets; never commit plaintext credentials.
-- **Production URL:** populated after the Session 02 BYOK deployment.
-- **Status:** Phase 02 verified locally; production deployment follows commit/push.
+- **Production URL:** https://nura-4nr.pages.dev
+- **Latest deployment:** https://03d8c724.nura-4nr.pages.dev
+- **Status:** Phase 02 verified locally and deployed through Cloudflare BYOK.
 - **Last updated:** 2026-09-13.
