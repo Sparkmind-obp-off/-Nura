@@ -1,45 +1,89 @@
 # Nura UX/UI Specification
 
-**Status:** Canonical
-**Version:** 1.0
+**Status:** Canonical — Discovery Core Ready  
+**Version:** 2.0  
 **Date:** 2026-09-14
 
 ## 1. Purpose
 
-This document defines the UX/UI contract for Nura as **one platform** with two primary business dimensions:
+This document defines the UX/UI contract for **Nura as one platform** with two solution dimensions: **Digital** and **Vertical**.
 
-- **Digital** — digital products, services, automation, software, integrations, websites, dashboards, and digital operations.
-- **Vertical** — validated workflows and solutions for real-world business verticals such as Barber, Cafe, and future verticals.
+Discovery Core is an internal capability of Nura, not a separate product or application. The UX must make the canonical operating loop visible:
 
-Digital and Vertical are dimensions of the same Nura platform, not separate products.
+`Demand Signal → Opportunity → Business Context → Domain → Workflow → Problem → Evidence → Score → Validation → Solution → Execution → Verification → Outcome → Learning`
 
-The interface must make the core operating loop visible:
+Governing principle:
 
-`Demand Signal → Opportunity → Evidence + Scoring → Validation → Solution → Execution → Verification → Delivery → Outcome → Learning`
+> **Demand First → Context First → Solution Second → Execution Always**
+
+The interface must never force a predetermined industry, vertical, or solution before sufficient context and evidence exist.
 
 ## 2. Canonical UX Principles
 
-1. **Demand before solution.** The UI starts from evidence and opportunity, not from a catalogue of things Nura wants to sell.
-2. **One Nura.** Navigation and visual identity must present one coherent platform.
-3. **Digital and Vertical are dimensions.** They may be filters, solution classifications, or workspace contexts, but must not appear as unrelated products.
-4. **Evidence is visible.** Users must be able to inspect where a claim came from and how strong the evidence is.
-5. **AI is assistive, not magical.** Predictions, recommendations, summaries, and scores are explicitly labelled as AI-generated or inferred when applicable.
-6. **Human control for consequential actions.** External publishing, client commitments, destructive actions, financial actions, or irreversible executions require explicit confirmation unless a separately authorized automation policy exists.
-7. **Verification is separate from execution.** Completing a task does not automatically mean the business outcome is verified.
-8. **No fake state.** The UI must never display a successful, verified, paid, or delivered state without the corresponding persisted evidence.
-9. **Progressive disclosure.** Summary first; source evidence, scoring details, audit events, and technical metadata are available on demand.
-10. **Outcome over activity.** The interface should make business outcomes more important than task counts.
+1. **Demand before solution.** Start from observed demand and context, not a product catalogue.
+2. **Context before solution.** Business context, domain, workflow, and problem discovery precede solution selection.
+3. **One Nura.** Digital and Vertical are dimensions of one platform.
+4. **Discovery is first-class.** Domain and workflow discovery are visible parts of the core experience.
+5. **Unknown-first.** A user can capture something Nura does not already know.
+6. **Evidence is visible.** Claims expose provenance and strength.
+7. **AI is assistive.** AI interpretations and recommendations are clearly distinguished from source facts.
+8. **Human control.** Consequential actions require explicit authorization unless an authorized automation policy exists.
+9. **Execution ≠ verification.** Completion never automatically means a verified outcome.
+10. **No fake state.** UI state must reflect persisted platform state.
+11. **Outcome over activity.** Verified business outcomes matter more than task counts.
+12. **Progressive disclosure.** Operational summaries remain simple while evidence, scoring, and audit detail remain inspectable.
 
-## 3. Information Architecture
+## 3. Onboarding / Entry Experience
 
-The primary application shell is:
+Onboarding is part of the main Nura UX. It does not require a separate product or document.
+
+Canonical first-use path:
+
+```text
+Onboarding
+   ↓
+Workspace / Tenant
+   ↓
+Discovery
+   ↓
+Capture Demand
+   ↓
+Understand Business Context
+   ↓
+Discover Domain
+   ↓
+Map Workflow
+   ↓
+Identify Problem
+   ↓
+Attach Evidence
+   ↓
+Score
+   ↓
+Validate
+   ↓
+Select Solution
+   ↓
+Execute
+   ↓
+Verify Outcome
+```
+
+The onboarding experience should teach the user that Nura does not require them to know the final solution in advance. A new workspace may begin with an unknown problem/domain and progressively structure it.
+
+## 4. Information Architecture
 
 ```text
 NURA
 ├── Overview
-├── Demand
+├── Discovery
 │   ├── Signals
-│   └── Opportunities
+│   ├── Opportunities
+│   ├── Business Context
+│   ├── Domains
+│   ├── Workflows
+│   └── Problems
+├── Evidence & Scoring
 ├── Validation
 ├── Solutions
 ├── Execution
@@ -53,15 +97,15 @@ NURA
     └── Audit
 ```
 
-The shell is a single Nura application. There is no separate NuraHub product surface.
+This is one Nura application. There is no NuraHub product surface, no standalone Vertical System, and no Nuralabs dependency.
 
-## 4. Global Navigation
+## 5. Global Navigation
 
-### Primary navigation
+Primary navigation:
 
 - Overview
-- Demand
-- Opportunities
+- Discovery
+- Evidence & Scoring
 - Validation
 - Solutions
 - Execution
@@ -69,195 +113,229 @@ The shell is a single Nura application. There is no separate NuraHub product sur
 - Outcomes
 - Learning
 
-### Secondary navigation
+Discovery should be the natural entry point for new opportunities. Existing users may enter directly into a known workflow where permissions allow it.
 
-- Workspace settings
-- Connectors
-- Members & roles
-- Audit
+Global controls:
 
-### Global controls
-
-Every authenticated workspace should expose:
-
-- workspace selector when the user has multiple workspaces;
+- workspace selector;
 - search;
-- current user/profile control;
-- notifications where implemented;
-- clear environment indicator for non-production environments;
+- current user/profile;
+- notifications when implemented;
+- environment indicator outside production;
 - help/context affordance.
 
-## 5. Overview Dashboard
+## 6. Overview Dashboard
 
-The dashboard answers four questions:
+The dashboard answers:
 
 1. What demand is arriving?
-2. Which opportunities deserve attention?
-3. What is currently being executed?
-4. Which outcomes have actually been verified?
+2. What context and problems are emerging?
+3. Which opportunities deserve attention?
+4. What is being executed?
+5. Which outcomes are actually verified?
 
 Recommended cards:
 
 - New demand signals
-- High-priority opportunities
+- Opportunities needing discovery
+- Domains/workflows under discovery
+- Problems awaiting evidence
 - Opportunities awaiting validation
 - Active executions
 - Items awaiting verification
 - Verified business outcomes
 - Productization candidates
 
-The dashboard must distinguish counts by evidence/state rather than presenting every signal as an opportunity or every opportunity as validated demand.
+Counts must respect lifecycle state. A signal is not automatically an opportunity; an opportunity is not automatically validated demand.
 
-## 6. Demand Signals
+## 7. Discovery Workspace
 
-### Signal list
+Discovery is the core UX surface.
 
-Each signal row/card should expose:
+### 7.1 Demand Signal
+
+Capture:
 
 - source;
-- captured time;
-- short normalized summary;
+- original/normalized content where permitted;
+- capture time;
 - source type;
-- evidence status;
-- current processing state;
-- related opportunity, if any;
-- confidence/evidence strength where meaningful.
+- provenance;
+- extraction/normalization notes;
+- related entities.
 
-Filters:
+The UI must allow a signal to remain unresolved.
 
-- source;
-- date range;
-- status;
-- evidence level;
-- workspace;
-- related/unrelated opportunity.
+### 7.2 Opportunity
 
-### Signal detail
+An opportunity is a structured hypothesis formed from demand signals. Show:
+
+- title;
+- problem hypothesis;
+- linked signals;
+- current evidence;
+- score;
+- discovery state;
+- validation state;
+- solution state.
+
+### 7.3 Business Context
+
+Context answers **where and how this demand exists**.
 
 Show:
 
-- original/normalized content where permitted;
-- source/provenance;
-- capture metadata;
-- extraction/normalization notes;
-- related evidence;
-- linked opportunity;
-- audit history.
+- organization/business context;
+- actors;
+- customer/user type;
+- operating environment;
+- goals;
+- constraints;
+- existing tools/processes;
+- source evidence;
+- unknown fields requiring discovery.
 
-Never imply that a single public mention is automatically validated market demand.
+Do not force an industry label when evidence is insufficient.
 
-## 7. Opportunity Management
+### 7.4 Domain Discovery
 
-### Opportunity list
+A domain is an observed business context, not a fixed catalogue entry.
 
-Primary columns/cards:
+Domain UI should show:
 
-- Opportunity title
-- Problem statement
-- Demand/evidence strength
-- Score
-- Validation status
-- Solution direction
-- Current execution state
-- Last updated
+- candidate name/description;
+- discovery status;
+- evidence count;
+- confidence;
+- related contexts;
+- workflows;
+- repeated problems;
+- validation status;
+- solution state.
 
-### Opportunity workspace
+Valid early state:
 
-The detail view should use a clear progression:
+`Domain Candidate → solution: null`
+
+Example:
 
 ```text
-Problem
-  ↓
-Evidence
-  ↓
-Score
-  ↓
-Validation
-  ↓
-Solution
-  ↓
-Execution
-  ↓
-Verification
-  ↓
-Outcome
+Snack Distribution
+Status: Observed
+Evidence: 12
+Workflows: Ordering, Replenishment, Delivery
+Repeated Problems: Manual Order Capture, Stock Visibility
+Validation: In Progress
+Solution: Not Yet Selected
 ```
 
-Each stage should show its state and the evidence required to move forward.
+Never require the UI to select a predefined vertical such as Barber/Cafe/Property.
 
-## 8. Evidence & Provenance UX
+### 7.5 Workflow Discovery
 
-Evidence should be inspectable without overwhelming the main workflow.
+A workflow view should expose:
 
-Recommended presentation:
+- workflow name;
+- actor(s);
+- trigger;
+- inputs;
+- actions;
+- decisions;
+- handoffs;
+- tools;
+- outputs;
+- bottlenecks;
+- frequency;
+- constraints;
+- supporting evidence.
 
-- Evidence level badge: Observed / Inferred / Validated / Paid-Adopted / Outcome Verified.
-- Source label.
-- Timestamp.
-- Source reference when lawful and available.
-- Extraction/interpretation note.
-- Evidence strength or confidence.
-- Link to related signals.
+The UI should make the operational flow understandable before recommending automation or software.
 
-The UI must clearly distinguish **source fact** from **Nura interpretation**.
+### 7.6 Problem Discovery
 
-## 9. Scoring UX
+Separate:
 
-Scores must be explainable.
+`Symptom → Request → Operational Friction → Repeated Problem → Root-Cause Hypothesis → Validated Problem`
 
-A score view should include:
+Problem cards should show:
+
+- observed statement;
+- affected actor;
+- frequency/materiality;
+- related workflow;
+- evidence;
+- confidence;
+- validation state;
+- unresolved questions.
+
+## 8. Evidence & Provenance
+
+Evidence is inspectable at every discovery stage.
+
+Show:
+
+- evidence level;
+- source;
+- timestamp;
+- lawful source reference when available;
+- linked signal/context/domain/workflow/problem;
+- extraction/interpretation note;
+- strength/confidence.
+
+Recommended evidence levels:
+
+`Observed → Inferred → Validated → Paid-Adopted → Outcome Verified`
+
+The UI must distinguish **source fact** from **Nura interpretation**.
+
+## 9. Scoring
+
+Scores are decision support, not objective truth.
+
+Show:
 
 - overall score;
-- component dimensions;
+- dimensions;
 - contribution of each dimension;
 - supporting evidence;
 - missing evidence;
-- scoring version/model identifier when applicable;
+- scoring/model version;
 - timestamp;
-- recommendation generated from the score.
+- recommendation.
 
-Example dimensions:
-
-- Demand strength
-- Frequency/repetition
-- Pain severity
-- Buyer relevance
-- Reachability
-- Willingness-to-pay evidence
-- Outcome potential
-- Execution feasibility
-
-AI-generated scores must not be presented as objective truth.
+Possible dimensions include demand strength, repetition, pain severity, buyer relevance, reachability, willingness-to-pay evidence, outcome potential, and execution feasibility.
 
 ## 10. Validation Workspace
 
-Validation is an explicit workflow, not a decorative status.
+Validation is an explicit gate.
 
-The UI should support:
+Support:
 
-- validation hypothesis;
+- hypothesis;
 - target customer/problem;
 - evidence to collect;
-- validation method;
-- validation activity;
+- method;
+- activity;
 - observed result;
 - decision;
 - validator/operator;
 - timestamp;
 - supporting artifacts.
 
-Possible decisions:
+Decisions:
 
 - Validated
 - Rejected
 - Parked
 - Needs more evidence
 
-A validated status requires persisted validation evidence.
+A validated state requires persisted evidence. Until then, the solution may remain `null`.
 
 ## 11. Solution Selection
 
-The solution screen should answer: **What is the smallest appropriate intervention that can produce the desired outcome?**
+Only after sufficient validation should the UI ask:
+
+> **What is the smallest appropriate intervention that can produce the desired outcome?**
 
 Supported solution types may include:
 
@@ -271,317 +349,251 @@ Supported solution types may include:
 - Existing external tool
 - No action / monitor
 
-Digital and Vertical are classification dimensions inside this registry.
+Digital and Vertical are dimensions inside one solution registry. They are not separate products.
 
-The UI should show:
+Show:
 
 - selected solution;
-- why it fits the opportunity;
+- why it fits;
 - expected outcome;
 - dependencies;
-- estimated effort;
 - evidence supporting the choice;
-- alternative options considered where useful.
+- alternatives considered;
+- effort/constraints where known.
 
 ## 12. Execution Workspace
 
-Execution is where a selected solution becomes work.
+Execution exposes:
 
-The UI should expose:
-
-- execution status;
 - goal;
+- status;
 - tasks/steps;
 - responsible actor;
 - dependencies;
-- connector/tool usage;
-- retry/error state;
+- connector/tool use;
+- retries/errors;
 - artifacts;
 - execution events;
-- cancellation control;
+- cancellation;
 - audit trail.
 
-Recommended state visualization:
+State:
 
 `READY → RUNNING → BLOCKED / FAILED / CANCELLED → COMPLETED`
 
-Completion means execution finished. It does not mean the business outcome is verified.
+Execution completion does not verify the business outcome.
 
 ## 13. Verification & Delivery
 
-Verification must be a dedicated stage.
+Verification is a separate stage.
 
-The screen should show:
+Show:
 
 - expected result;
-- delivered artifact(s);
+- delivered artifact;
 - verification criteria;
 - actual evidence;
 - verifier;
-- verification timestamp;
-- verification status;
-- delivery status.
+- timestamp;
+- verification state;
+- delivery state.
 
-Possible verification states:
+States:
 
 - Pending
 - Passed
 - Failed
 - Needs review
 
-A green execution completion state must not automatically turn the outcome into verified.
+`Executed ≠ Delivered ≠ Verified Outcome`
 
 ## 14. Outcome UX
-
-Outcome records should focus on measurable business results.
 
 Show:
 
 - expected outcome;
 - actual observed outcome;
-- metric/value where applicable;
+- metric/value;
 - baseline/comparison when available;
 - evidence source;
 - verification state;
-- customer/client acknowledgement where applicable;
+- customer acknowledgement when applicable;
 - date range.
 
-The UI should distinguish:
-
-`Executed ≠ Delivered ≠ Verified Outcome`
+No verified-outcome badge may appear without persisted verification evidence.
 
 ## 15. Learning & Productization
 
-Learning records capture what happened after execution and verification.
-
-Show:
+Learning records show:
 
 - original hypothesis;
-- what was validated;
-- what failed;
-- what worked;
+- validated facts;
+- failures;
+- successful intervention;
 - measured outcome;
-- repeatability indicators;
+- repeatability;
 - related opportunities;
 - productization recommendation.
 
-Productization should visually follow:
+Productization follows:
 
 `Signal → Repeated Problem → Evidence → Validation → Pilot → Repeatable Outcome → Productization`
 
-No productization badge should appear merely because an operator likes an idea.
-
 ## 16. Connector UX
 
-Connector settings should be operational and security-aware.
+Connector settings show:
 
-Each connector should show:
-
-- connector name/type;
-- provider;
+- provider/type;
 - connection status;
-- scope;
-- owning tenant/workspace;
+- tenant/workspace scope;
+- permissions/scopes;
 - last successful use;
 - last error;
-- credential status without exposing secrets;
-- permissions/scopes;
+- credential status without secrets;
 - audit history.
 
-Secrets must never be rendered in plaintext.
-
-Connector execution should display the provider through a normalized Nura action/result abstraction rather than coupling the user experience to provider-specific implementation details.
+Secrets are never rendered in plaintext. Provider-specific details remain behind the normalized Nura connector boundary.
 
 ## 17. Audit UX
 
-Audit views should allow authorized users to inspect:
+Authorized users can inspect:
 
 - actor;
 - action;
 - target entity;
 - timestamp;
-- request/correlation identifier where available;
-- result;
-- relevant state transition;
+- correlation/request ID;
+- state transition;
 - source/connector;
+- result;
 - security-relevant events.
 
-Audit records are read-only from the normal application UI.
+Audit records are read-only in normal application UX.
 
 ## 18. Roles & Permissions
 
-The UI should reflect server-side authorization rather than treating hidden buttons as security.
-
 Minimum conceptual roles:
 
-- **Owner/Admin** — workspace administration, members, connectors, policy, audit.
-- **Operator** — demand, opportunities, validation, solution selection, execution, verification workflows according to granted permissions.
-- **Reviewer/Verifier** — validation and verification responsibilities without broad administrative access.
-- **Client/Business User** — restricted access to relevant opportunities, deliverables, verification, and outcomes.
+- **Owner/Admin** — workspace, members, connectors, policies, audit.
+- **Operator** — discovery, validation, solution, execution and verification according to permissions.
+- **Reviewer/Verifier** — validation/verification responsibilities.
+- **Client/Business User** — restricted relevant opportunities, delivery, verification and outcomes.
 
-The exact permission matrix is defined by the security/ownership contract, not inferred from the frontend.
+Authorization is enforced server-side; hidden UI controls are not security.
 
-## 19. Human-in-the-Loop Controls
+## 19. Human-in-the-Loop
 
-Require explicit confirmation before consequential actions such as:
+Explicit confirmation is required for consequential actions such as:
 
-- sending external communications;
-- publishing externally;
-- changing production configuration;
-- deleting records/artifacts;
-- triggering paid external actions;
-- committing a client-facing delivery;
-- accepting a verified outcome when human verification is required.
+- external communication;
+- external publishing;
+- production configuration changes;
+- deletion;
+- paid external actions;
+- client-facing delivery;
+- acceptance of a verified outcome where human verification is required.
 
-Confirmation dialogs should state:
+Confirmation explains target, action, consequences, actor, and reversibility.
 
-- what will happen;
-- target;
-- important consequences;
-- actor;
-- whether the action is reversible.
+## 20. States, Errors, and Blocked UX
 
-## 20. Empty, Loading, Error, and Blocked States
+Every workflow needs intentional empty/loading/error/blocked states.
 
-Every major workflow must have intentional states.
+Empty states explain the next useful action. Loading states never fabricate values. Errors state what failed, persistence status, retry safety, recovery action, and correlation ID where useful. Blocked states identify missing prerequisites such as evidence, authorization, review, or validation.
 
-### Empty
+## 21. Responsive & Accessibility
 
-Explain why there is no data and provide the next useful action.
+Desktop supports dense discovery/evidence workspaces. Mobile prioritizes triage, status review, approvals, execution monitoring, verification, and search/filter.
 
-### Loading
+Minimum accessibility:
 
-Use skeletons or progressive loading without fabricating values.
+- keyboard access;
+- visible focus;
+- semantic headings/landmarks;
+- adequate contrast;
+- status not conveyed by colour alone;
+- accessible labels;
+- actionable form validation;
+- non-essential motion only.
 
-### Error
+## 22. Visual System Direction
 
-Show:
+Use a professional operational-product language with clear hierarchy, restrained noise, strong lifecycle/status semantics, and distinct treatment for source evidence versus AI recommendations.
 
-- what failed;
-- whether data was persisted;
-- whether retry is safe;
-- recovery action;
-- correlation/reference ID where useful.
-
-### Blocked
-
-Explain the missing prerequisite, such as missing evidence, connector authorization, required review, or unresolved validation.
-
-## 21. Responsive and Mobile UX
-
-Nura should be usable on desktop and mobile.
-
-Desktop prioritizes multi-column operational workspaces and evidence inspection.
-
-Mobile prioritizes:
-
-- opportunity triage;
-- status review;
-- approvals/confirmations;
-- execution monitoring;
-- verification decisions;
-- essential search/filter actions.
-
-Dense tables should collapse into readable cards or horizontally scroll only when necessary.
-
-## 22. Accessibility
-
-Minimum requirements:
-
-- keyboard-accessible interactive controls;
-- visible focus states;
-- semantic headings and landmarks;
-- sufficient text/background contrast;
-- status communicated without colour alone;
-- accessible labels for icons and controls;
-- form validation that identifies the problem and recovery action;
-- motion kept optional/non-essential.
-
-## 23. Visual System Direction
-
-Nura should use a professional operational-product visual language:
-
-- clear hierarchy;
-- restrained visual noise;
-- strong status semantics;
-- evidence and provenance visually distinct from AI recommendations;
-- consistent badges for lifecycle/evidence states;
-- predictable primary/secondary/destructive actions.
-
-Avoid visual treatment that makes Nura look like:
+Avoid making Nura look like:
 
 - a chatbot wrapper;
-- a generic AI playground;
-- a marketplace catalogue by default;
+- generic AI playground;
+- default marketplace catalogue;
 - multiple disconnected products.
 
-## 24. UX State Semantics
-
-The UI should preserve these distinctions:
+## 23. UX State Semantics
 
 | State | Meaning |
 |---|---|
-| Captured | Signal was recorded |
-| Normalized | Signal was structured |
-| Scoring | Evidence is being evaluated |
-| Validating | Validation activity is active |
+| Captured | Signal recorded |
+| Normalized | Signal structured |
+| Context Discovered | Business context captured |
+| Domain Observed | Domain candidate identified |
+| Workflow Mapped | Workflow structure captured |
+| Problem Identified | Problem pattern recorded |
+| Evidence Collected | Supporting evidence attached |
+| Scoring | Evidence evaluated |
+| Validating | Validation active |
 | Validated | Sufficient validation evidence exists |
-| Solution Selected | An intervention has been chosen |
-| Executing | Work is in progress |
+| Solution Selected | Intervention chosen |
+| Executing | Work in progress |
 | Completed | Execution finished |
-| Verifying | Result is being checked |
-| Delivered | Artifact/work was delivered |
-| Outcome Recorded | Outcome data was recorded |
+| Verifying | Result being checked |
+| Delivered | Artifact/work delivered |
+| Outcome Recorded | Outcome data recorded |
 | Outcome Verified | Outcome evidence passed verification |
 | Learned | Learning record captured |
 
-These states must not be collapsed merely for visual simplicity.
+These states must not be collapsed in a way that changes their meaning.
 
-## 25. UX Acceptance Criteria
+## 24. UX Acceptance Criteria
 
-The UX/UI implementation is acceptable only if:
+The implementation is acceptable only if:
 
-1. A user can follow one opportunity from signal through outcome without losing context.
-2. Evidence provenance is inspectable.
-3. Scoring explanations are available.
-4. Validation is visibly distinct from scoring.
-5. Digital and Vertical appear as solution dimensions, not separate products.
-6. Execution and verification are separate states/screens or clearly separate stages.
-7. No UI claims an outcome is verified without persisted verification evidence.
-8. Human confirmation exists for consequential actions.
-9. Tenant/workspace context is always clear.
-10. Connector status and credential state are visible without exposing secrets.
-11. Errors and blocked states provide recovery guidance.
-12. Mobile and keyboard interaction remain usable for core workflows.
-13. Audit information is accessible to authorized users.
-14. AI-generated recommendations are distinguishable from source facts.
-15. No NuraHub product surface is introduced.
-16. Nuralabs is not referenced as a Nura subsystem or dependency.
+1. A new unknown signal can enter Discovery without a predetermined industry or solution.
+2. A user can follow one opportunity through context, domain, workflow, problem, evidence, validation, solution and outcome.
+3. Domain candidates can exist without a solution.
+4. Workflow and problem discovery are visible and persisted.
+5. Evidence provenance is inspectable.
+6. Scoring explanations are available.
+7. Validation is distinct from scoring.
+8. Digital and Vertical appear as solution dimensions, not separate products.
+9. Execution and verification remain separate.
+10. No UI claims verified outcome without persisted verification evidence.
+11. Human confirmation exists for consequential actions.
+12. Tenant/workspace context is always clear.
+13. Connector credentials are never exposed.
+14. Errors and blocked states provide recovery guidance.
+15. Mobile and keyboard interaction remain usable for core workflows.
+16. Authorized audit information is accessible.
+17. AI recommendations are distinguishable from source facts.
+18. No NuraHub product surface is introduced.
+19. Nuralabs is not referenced as a Nura subsystem or dependency.
+20. No fixed industry catalogue is required for discovery.
 
-## 26. Implementation Guardrails
+## 25. Implementation Guardrails
 
-Do not implement UI merely to make the product appear complete.
+Do not fabricate demand, context, validation, execution, delivery, or outcomes. Do not imply capabilities that do not exist. Do not create separate product identities for Digital and Vertical. Do not introduce NuraHub or Nuralabs into the Nura architecture. Do not build screens whose underlying state cannot be persisted, authorized, and audited.
 
-Do not:
+The frontend is a truthful representation of the Discovery Core and downstream platform state.
 
-- fabricate demand data;
-- fabricate validation results;
-- fabricate verified outcomes;
-- expose secrets;
-- imply autonomous capabilities that do not exist;
-- create separate product identities for Digital and Vertical;
-- introduce NuraHub as a product;
-- introduce Nuralabs as a Nura dependency;
-- build screens whose underlying state cannot be persisted or audited.
+## 26. Canonical References
 
-The frontend is a truthful representation of the platform state and operating loop.
+Read together with:
 
-## 27. Canonical Reference
+1. `docs/NURA_CONTEXT_FIRST_CANONICAL_AMENDMENT.md`
+2. `docs/NURA_FINAL_CONCEPT_AND_ARCHITECTURE.md`
+3. `docs/NURA_DISCOVERY_CORE_SPEC.md`
+4. `docs/NURA_DISCOVERY_CORE_HARDENING_AND_READINESS.md`
+5. `docs/NURA_PRODUCT_REQUIREMENTS_AND_MVP_SPEC.md`
+6. `docs/NURA_TECHNICAL_SPEC.md`
+7. `docs/NURA_DATA_API_CONNECTOR_CONTRACT.md`
+8. `docs/NURA_SECURITY_OWNERSHIP_CONTRACT.md`
 
-This UX/UI specification must be read together with:
-
-1. `docs/NURA_FINAL_CONCEPT_AND_ARCHITECTURE.md`
-2. `docs/NURA_PRODUCT_REQUIREMENTS_AND_MVP_SPEC.md`
-3. `docs/NURA_TECHNICAL_SPEC.md`
-
-If an older document conflicts with these canonical documents, the canonical architecture and current technical contract take precedence.
+If an older document conflicts with these canonical contracts, the current canonical architecture and Discovery Core contracts take precedence.
