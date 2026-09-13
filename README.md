@@ -1,87 +1,93 @@
 # Nura
 
-**Nura** is a business ecosystem built around one principle:
+**Nura is one platform.**
+
+Nura connects real business demand with the right digital or vertical solution and drives the work toward a verified business outcome.
 
 > **Demand first → Product second → Execution always.**
 
-Nura connects real demand, digital services, real-world business verticals, and an AI execution core.
-
-## Ecosystem
+## Final Product Structure
 
 ```text
-Nura
-├── NuraHub       → primary platform / entry point
-├── NuraDigital   → digital business needs
-├── NuraVertical  → real-world vertical needs
-└── Nuralabs Core → shared AI Work & Execution Core
+                         NURA
+                           │
+              ┌────────────┴────────────┐
+              │                         │
+           DIGITAL                   VERTICAL
+              │                         │
+              └────────────┬────────────┘
+                           │
+                    Shared Platform
+                           │
+             Demand → Validate → Execute
+                           │
+                    Verify → Deliver
+                           │
+                    Business Outcome
 ```
 
-The operating flow is:
+### Digital
+
+The Digital line covers needs such as websites, landing pages, business applications, automation, software, APIs/integrations, dashboards, digital assets, and digital operations.
+
+### Vertical
+
+The Vertical line covers needs rooted in real-world business workflows. Initial discovery examples may include Barber, Cafe, and other verticals, but a vertical is only productized after real activity, recurring problems, evidence, validation, and measurable outcomes.
+
+## Important Naming Decision
+
+- **Nura** = the platform and master product identity.
+- **Digital** = business line / capability dimension inside Nura.
+- **Vertical** = business line / capability dimension inside Nura.
+- **Hub** = optional internal UX/navigation terminology; **not a separate product**.
+- **Nuralabs** = **not part of Nura's product architecture**.
+
+Nura does not depend on a product or subsystem named Nuralabs. Any separate Nuralabs repository/project is independent from this Nura architecture.
+
+## Platform Flow
 
 ```text
-Real Demand
+Demand Signal
     ↓
 Opportunity
     ↓
+Evidence + Scoring
+    ↓
 Validation
     ↓
-Product / Service Surface
+Digital / Vertical Solution
     ↓
-Nuralabs Core
+Execution
     ↓
-Build → Run → Verify → Deliver
+Verification
+    ↓
+Delivery
     ↓
 Verified Business Outcome
     ↓
 Learning
 ```
 
-## NuraHub
-
-NuraHub is the front door of the ecosystem. It helps a user express what they want to solve and routes that need into the appropriate Nura business line.
-
-## NuraDigital
-
-NuraDigital handles reusable digital needs such as websites, business applications, automation, software, APIs/integrations, dashboards, design assets, and digital operations.
-
-## NuraVertical
-
-NuraVertical handles needs rooted in real-world business operations. Initial discovery examples include **Nura Barber** and **Nura Cafe**. A vertical is only productized after real activity, recurring problems, workflow evidence, and validation.
-
-## Nuralabs Core
-
-Nuralabs is the shared execution engine. It is responsible for planning, tool execution, sandboxed work, workflow state, validation, evidence/provenance, artifacts, approvals/policy, retries/recovery, and delivery.
-
-Nuralabs is not a branding layer or a clone of another AI product. It is the execution infrastructure underneath Nura.
+The user should experience this as **one Nura platform**, not as a collection of internal products.
 
 ## Architecture Principle
 
-One codebase may serve multiple Nura deployments when application boundaries, configuration, secrets, routing, tenant isolation, and data boundaries remain explicit.
+**One platform, modular internals.**
 
-Target deployments:
+Nura may use one codebase with multiple routes, surfaces, or deployments when that improves operations, but artificial product separation must not be introduced without a real technical or business reason.
 
-- NuraHub
-- NuraDigital
-- NuraVertical
+## Productization Rule
 
-Separate repositories should only be introduced when a real technical or operational reason appears.
+```text
+Signal → Repeated Problem → Evidence → Validation → Pilot → Repeatable Outcome → Productization
+```
 
-## Product Boundary
-
-Nura is the business ecosystem.
-
-NuraHub is the platform entry point.
-
-NuraDigital and NuraVertical are business lines.
-
-Nuralabs Core is the shared execution engine.
-
-The ecosystem is intentionally designed to avoid building large products before demand is demonstrated.
+Nura should not build a large product merely because a market sounds attractive.
 
 ## North Star
 
 **Verified Business Outcomes per Active Tenant per Month.**
 
-## Status
+## Canonical Architecture
 
-This repository is the initial Nura concept and product-boundary source of truth. Implementation should follow the documented boundaries before expanding into product features.
+See [`docs/NURA_FINAL_CONCEPT_AND_ARCHITECTURE.md`](docs/NURA_FINAL_CONCEPT_AND_ARCHITECTURE.md) for the final concept and architecture boundary.
