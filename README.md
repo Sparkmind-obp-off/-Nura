@@ -2,9 +2,9 @@
 
 **Nura is one platform.**
 
-Nura connects real business demand with the right digital or vertical solution and drives the work toward a verified business outcome.
+Nura discovers real business demand and context, identifies validated problems, selects the right digital or vertical solution, and drives execution toward a verified business outcome.
 
-> **Demand first → Product second → Execution always.**
+> **Demand First → Context First → Solution Second → Execution Always.**
 
 ## Final Product Structure
 
@@ -17,28 +17,30 @@ Nura connects real business demand with the right digital or vertical solution a
               │                         │
               └────────────┬────────────┘
                            │
-                    Shared Platform
+                    SHARED PLATFORM
                            │
-             Demand → Validate → Execute
+             Demand → Context → Solution
                            │
-                    Verify → Deliver
+                    Execute → Verify
                            │
                     Business Outcome
 ```
 
 ### Digital
 
-The Digital line covers needs such as websites, landing pages, business applications, automation, software, APIs/integrations, dashboards, digital assets, and digital operations.
+The Digital dimension covers needs such as websites, landing pages, business applications, automation, software, APIs/integrations, dashboards, digital assets, and digital operations.
 
 ### Vertical
 
-The Vertical line covers needs rooted in real-world business workflows. Initial discovery examples may include Barber, Cafe, and other verticals, but a vertical is only productized after real activity, recurring problems, evidence, validation, and measurable outcomes.
+The Vertical dimension covers contextual needs rooted in real-world business workflows.
+
+**Verticals are discovered, not hardcoded.** A domain such as Barber, Cafe, Snack Distribution, Logistics, Clinic, Farming, Property, Manufacturing, or another domain may emerge from real evidence. These are examples of possible discoveries, not a fixed Nura industry catalogue.
 
 ## Important Naming Decision
 
 - **Nura** = the platform and master product identity.
-- **Digital** = business line / capability dimension inside Nura.
-- **Vertical** = business line / capability dimension inside Nura.
+- **Digital** = business/solution dimension inside Nura.
+- **Vertical** = contextual business/solution dimension inside Nura.
 - **Hub** = optional internal UX/navigation terminology; **not a separate product**.
 - **Nuralabs** = **not part of Nura's product architecture**.
 
@@ -47,21 +49,27 @@ Nura does not depend on a product or subsystem named Nuralabs. Any separate Nura
 ## Platform Flow
 
 ```text
+Real World
+    ↓
 Demand Signal
     ↓
 Opportunity
+    ↓
+Domain / Business Context
+    ↓
+Workflow
+    ↓
+Problem
     ↓
 Evidence + Scoring
     ↓
 Validation
     ↓
-Digital / Vertical Solution
+Digital / Vertical / Existing Tool / Service / Automation / Integration / No Action
     ↓
 Execution
     ↓
 Verification
-    ↓
-Delivery
     ↓
 Verified Business Outcome
     ↓
@@ -74,7 +82,7 @@ The user should experience this as **one Nura platform**, not as a collection of
 
 **One platform, modular internals.**
 
-Nura may use one codebase with multiple routes, surfaces, or deployments when that improves operations, but artificial product separation must not be introduced without a real technical or business reason.
+The platform must be capable of discovering a new business domain without redesigning the core architecture. Domain discovery is a platform capability; it is not a fixed menu of vertical products.
 
 ## Productization Rule
 
@@ -82,7 +90,7 @@ Nura may use one codebase with multiple routes, surfaces, or deployments when th
 Signal → Repeated Problem → Evidence → Validation → Pilot → Repeatable Outcome → Productization
 ```
 
-Nura should not build a large product merely because a market sounds attractive.
+A domain becomes a strong productization candidate only when the problem and outcome are sufficiently repeated and validated across real activity.
 
 ## North Star
 
@@ -90,4 +98,8 @@ Nura should not build a large product merely because a market sounds attractive.
 
 ## Canonical Architecture
 
-See [`docs/NURA_FINAL_CONCEPT_AND_ARCHITECTURE.md`](docs/NURA_FINAL_CONCEPT_AND_ARCHITECTURE.md) for the final concept and architecture boundary.
+See:
+
+- [`docs/NURA_CONTEXT_FIRST_CANONICAL_AMENDMENT.md`](docs/NURA_CONTEXT_FIRST_CANONICAL_AMENDMENT.md) — highest-priority context-first amendment.
+- [`docs/NURA_FINAL_CONCEPT_AND_ARCHITECTURE.md`](docs/NURA_FINAL_CONCEPT_AND_ARCHITECTURE.md) — final concept and architecture boundary.
+- [`docs/NURA_VERTICAL_DISCOVERY_SPEC.md`](docs/NURA_VERTICAL_DISCOVERY_SPEC.md) — domain/vertical discovery contract.
